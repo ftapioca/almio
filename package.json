@@ -1,0 +1,22 @@
+{
+  "name": "almio",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "15.0.0"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @almio/web dev",
+    "dev:api": "pnpm --filter @almio/api start:dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "prisma:generate": "pnpm --filter @almio/api prisma:generate",
+    "prisma:validate": "pnpm --filter @almio/api prisma:validate",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
