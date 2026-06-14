@@ -15,6 +15,8 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "prisma:generate": "pnpm --filter @almio/api prisma:generate",
+    "prisma:migrate:deploy": "pnpm --filter @almio/api prisma:migrate:deploy",
+    "prisma:seed": "pnpm --filter @almio/api prisma:seed",
     "prisma:validate": "pnpm --filter @almio/api prisma:validate",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"

@@ -5,11 +5,18 @@ import {
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { TenantContext } from './tenant-context.type';
+import { TenantService } from './tenant.service';
 
 @Injectable()
 export class TenantResolverMiddleware implements NestMiddleware {
-  use(req: Request & { tenant?: TenantContext }, _: Response, next: NextFunction) {
-    if (req.path.endsWith('/health') || req.originalUrl.endsWith('/health')) {
+  constructor(private readonly tenantService: TenantService) {}
+
+  async use(
+    req: Request & { tenant?: TenantContext },
+    _: Response,
+    next: NextFunction,
+  ) {
+    if (this.isExcludedPath(req)) {
       next();
       return;
     }
@@ -19,13 +26,23 @@ export class TenantResolverMiddleware implements NestMiddleware {
       throw new ForbiddenException('Tenant not identified');
     }
 
+    const company = await this.tenantService.findActiveCompanyBySlug(tenantId);
+    if (!company) {
+      throw new ForbiddenException('Tenant not found or inactive');
+    }
+
     req.tenant = {
-      id: tenantId,
-      slug: tenantId,
-      schemaName: `tenant_${tenantId}`,
+      id: company.id,
+      slug: company.slug,
+      schemaName: company.schemaName,
     };
 
     next();
+  }
+
+  private isExcludedPath(req: Request): boolean {
+    const path = req.originalUrl || req.path || '';
+    return path.includes('/health') || path.startsWith('/v1/auth');
   }
 
   private extractTenant(req: Request): string | undefined {

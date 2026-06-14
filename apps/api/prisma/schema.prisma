@@ -12,9 +12,9 @@ model SaaSPlan {
   code        String   @unique
   name        String
   maxCompanies Int?    @map("max_companies")
-  maxBranches Int
+  maxBranches Int      @map("max_branches")
   maxEmployees Int?   @map("max_employees")
-  maxUsers    Int
+  maxUsers    Int      @map("max_users")
   priceMonthly Decimal? @db.Decimal(12, 2) @map("price_monthly")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
