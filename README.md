@@ -37,7 +37,7 @@ El MVP está orientado a restaurantes pequeños y locales de comida rápida, con
 
 ## Estado real del repositorio
 
-La repo ya está en transición a `Fase 1 - SaaS Core + Seguridad`.
+La repo quedó lista para iniciar `Fase 2 - Branches y Employees`.
 
 Implementado hoy:
 
@@ -56,12 +56,32 @@ Implementado hoy:
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
 - workflow de CI para `lint`, `typecheck`, `test` y `build`
+- cierre explícito de autenticación:
+  - el login operativo vive en `Supabase Auth`
+  - el backend Almio no expone hoy endpoints propios `login|logout|refresh`
+  - la API valida JWT emitidos por Supabase y aplica RBAC/tenant resolution server-side
 
 Pendiente para próximas fases:
 
-- endpoints propios de `auth/login|logout|refresh` o cierre explícito de que el login vive solo en Supabase Auth
 - módulos SaaS Core, RRHH, Asistencia, Turnos, POS, Menú, Inventario, Pagos y Dashboards
 - SAST, observabilidad, backups, runbooks y hardening
+
+## Cierre de Fase 1
+
+Se considera cerrado para esta repo el alcance base de `SaaS Core + Seguridad`:
+
+- `schema public` operativo en Supabase
+- seed y provisioning tenant-aware
+- auth server-side por validación de JWT de `Supabase Auth`
+- tenant resolver real por `Company`
+- RBAC base y auditoría SaaS
+- CI mínima del monorepo
+
+Decisión operativa vigente:
+
+- el flujo de autenticación de usuarios finales depende de `Supabase Auth`
+- cualquier UI o cliente que necesite sesión debe obtener el token desde Supabase y luego consumir Almio con `Authorization: Bearer <jwt>`
+- mientras no exista un requerimiento nuevo en SoW/SDD, no se crearán endpoints duplicados `login|logout|refresh` en `apps/api`
 
 ## Estructura
 

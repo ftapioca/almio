@@ -53,6 +53,12 @@ Implementado hoy:
 - `POST /v1/admin/companies`
 - `GET /v1/admin/plans`
 
+Decisión explícita de autenticación vigente:
+
+- el login operativo vive en `Supabase Auth`
+- Almio API no expone hoy `/v1/auth/login`, `/v1/auth/logout` ni `/v1/auth/refresh`
+- los clientes deben autenticarse con Supabase y consumir Almio con el JWT emitido por Supabase
+
 Planificado según documentos base:
 
 - `/v1/auth`
@@ -69,6 +75,18 @@ Planificado según documentos base:
 - `/v1/sync`
 
 ## Endpoint implementado
+
+### Autenticación operativa actual
+
+Estado:
+
+- no existe hoy un módulo REST propio de login en `apps/api`
+- el contrato real implementado es `JWT de Supabase -> Authorization Bearer -> validación server-side en Almio`
+
+Implicancias:
+
+- cualquier ejemplo de consumo debe asumir un token emitido por Supabase
+- `/v1/auth` permanece como `planificado` hasta que exista una necesidad funcional distinta del flujo nativo de Supabase
 
 ### `GET /v1/health`
 
@@ -158,7 +176,7 @@ Query params:
 
 ## Trabajo pendiente por Fase
 
-- Fase 1: `auth`, `admin` create/list/read, `admin/plans`, tenant resolver real, RBAC, auditoría, tenant provisioning baseline
+- Fase 1: cerrada en esta repo para `SaaS Core + Seguridad` base
 - Fase 2: `branches`, `employees`
 - Fase 3: `attendance`, `shifts`
 - Fase 4: `pos`, `cash-sessions`, `sync`

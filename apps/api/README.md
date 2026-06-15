@@ -1,22 +1,42 @@
 # API
 
-Scaffold NestJS de `Fase 0`, alineado con SoW, SDD, SRS, DocAPI y Cronograma.
+Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 
 ## Implementado hoy
 
 - `GET /v1/health`
-- `TenantResolverMiddleware` base
+- `GET /v1/me`
+- `GET /v1/me/owner`
+- `GET /v1/admin/companies`
+- `GET /v1/admin/companies/:slug`
+- `POST /v1/admin/companies`
+- `GET /v1/admin/plans`
+- `TenantResolverMiddleware` real por `Company`
+- `AuthGuard` real con JWT de Supabase
 - `RolesGuard`
-- `AuditInterceptor` base
+- auditoría SaaS persistente
 - `ValidationPipe` global
 
-## Objetivos de Fase 0 y Fase 1
+## Cierre operativo de Fase 1
 
-- conectar Prisma con Supabase/PostgreSQL
-- implementar `TenantResolver` real con validación de empresa y `search_path`
-- incorporar auth real con Supabase Auth
-- modelar `schema public` para SaaS Core
-- agregar `AuthGuard`, `BranchGuard` y auditoría persistente
+- Prisma conectado a Supabase/PostgreSQL
+- `schema public` de SaaS Core aplicado
+- provisioning tenant-aware versionado
+- validación server-side de JWT emitidos por `Supabase Auth`
+- tenant resolution y RBAC base operativos
+
+## Decisión explícita sobre autenticación
+
+- El login operativo vive solo en `Supabase Auth`.
+- `apps/api` no expone hoy endpoints propios `login`, `logout` ni `refresh`.
+- La responsabilidad del backend Almio es:
+  - validar el JWT recibido
+  - resolver tenant
+  - aplicar RBAC y auditoría
+- La responsabilidad del frontend o cliente es:
+  - iniciar sesión contra Supabase
+  - refrescar sesión usando el SDK de Supabase
+  - enviar `Authorization: Bearer <jwt>` a Almio
 
 ## Nota de consistencia
 

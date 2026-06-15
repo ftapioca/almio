@@ -30,14 +30,21 @@ Entregar `SaaS Core + Seguridad` con:
   - `POST /v1/admin/companies`
 - prueba end-to-end validada para auth, tenant resolution y creación de empresa
 - ADRs base requeridos por el SDD
-- documentación interna alineada al estado real de Fase 0
+- decisión explícita de que el login operativo depende de `Supabase Auth`
+- documentación interna alineada al estado real de Fase 1
+
+## Estado de cierre
+
+Fase 1 queda cerrada para esta repo con la siguiente decisión operativa:
+
+- `Supabase Auth` es la única fuente de login, logout y refresh de sesión
+- Almio API no duplica ese flujo con endpoints propios mientras no exista un requerimiento nuevo
 
 ## Siguiente secuencia recomendada
 
 1. Incorporar SAST básico según cronograma.
-2. Continuar con `auth/login|logout|refresh` o documentar explícitamente que el login operativo depende de Supabase Auth externo.
-3. Empezar Fase 2 sobre `branches` y `employees`, aprovechando el baseline tenant ya provisionado.
-4. Agregar tests automáticos de tenant isolation antes de beta.
+2. Empezar Fase 2 sobre `branches` y `employees`, aprovechando el baseline tenant ya provisionado.
+3. Agregar tests automáticos de tenant isolation antes de beta.
 
 ## Restricción importante
 
