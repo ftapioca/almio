@@ -10,27 +10,24 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthUser } from '../../common/auth/auth-user.type';
-import { Roles } from '../../common/auth/roles.decorator';
 import { Role } from '../../common/auth/role.enum';
+import { Roles } from '../../common/auth/roles.decorator';
 import { TenantContext } from '../../common/tenant/tenant-context.type';
-import { CreateBranchDto } from './dto/create-branch.dto';
-import { ListBranchesQueryDto } from './dto/list-branches.query';
-import { UpdateBranchDto } from './dto/update-branch.dto';
-import { BranchesService } from './branches.service';
+import { CreateShiftDto } from './dto/create-shift.dto';
+import { ListShiftsQueryDto } from './dto/list-shifts.query';
+import { UpdateShiftDto } from './dto/update-shift.dto';
+import { ShiftsService } from './shifts.service';
 
 type TenantRequest = Request & { tenant: TenantContext; user?: AuthUser };
 
-@Controller('branches')
-export class BranchesController {
-  constructor(private readonly branchesService: BranchesService) {}
+@Controller('shifts')
+export class ShiftsController {
+  constructor(private readonly shiftsService: ShiftsService) {}
 
   @Get()
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async listBranches(
-    @Query() query: ListBranchesQueryDto,
-    @Req() request: TenantRequest,
-  ) {
-    const result = await this.branchesService.listBranches(
+  async listShifts(@Query() query: ListShiftsQueryDto, @Req() request: TenantRequest) {
+    const result = await this.shiftsService.listShifts(
       request.tenant,
       query,
       request.user,
@@ -45,8 +42,8 @@ export class BranchesController {
 
   @Get(':id')
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async getBranchById(@Param('id') id: string, @Req() request: TenantRequest) {
-    const branch = await this.branchesService.getBranchById(
+  async getShiftById(@Param('id') id: string, @Req() request: TenantRequest) {
+    const shift = await this.shiftsService.getShiftById(
       request.tenant,
       id,
       request.user,
@@ -54,14 +51,14 @@ export class BranchesController {
 
     return {
       success: true,
-      data: branch,
+      data: shift,
     };
   }
 
   @Post()
-  @Roles(Role.SUPERADMIN, Role.OWNER)
-  async createBranch(@Body() dto: CreateBranchDto, @Req() request: TenantRequest) {
-    const branch = await this.branchesService.createBranch(
+  @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
+  async createShift(@Body() dto: CreateShiftDto, @Req() request: TenantRequest) {
+    const shift = await this.shiftsService.createShift(
       request.tenant,
       dto,
       request.user,
@@ -69,18 +66,18 @@ export class BranchesController {
 
     return {
       success: true,
-      data: branch,
+      data: shift,
     };
   }
 
   @Patch(':id')
-  @Roles(Role.SUPERADMIN, Role.OWNER)
-  async updateBranch(
+  @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
+  async updateShift(
     @Param('id') id: string,
-    @Body() dto: UpdateBranchDto,
+    @Body() dto: UpdateShiftDto,
     @Req() request: TenantRequest,
   ) {
-    const branch = await this.branchesService.updateBranch(
+    const shift = await this.shiftsService.updateShift(
       request.tenant,
       id,
       dto,
@@ -89,7 +86,7 @@ export class BranchesController {
 
     return {
       success: true,
-      data: branch,
+      data: shift,
     };
   }
 }

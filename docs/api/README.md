@@ -60,6 +60,14 @@ Implementado hoy:
 - `POST /v1/employees`
 - `GET /v1/employees/:id`
 - `PATCH /v1/employees/:id`
+- `GET /v1/attendance`
+- `POST /v1/attendance`
+- `GET /v1/attendance/:id`
+- `PATCH /v1/attendance/:id`
+- `GET /v1/shifts`
+- `POST /v1/shifts`
+- `GET /v1/shifts/:id`
+- `PATCH /v1/shifts/:id`
 
 Decisión explícita de autenticación vigente:
 
@@ -70,9 +78,6 @@ Decisión explícita de autenticación vigente:
 Planificado según documentos base:
 
 - `/v1/auth`
-- `/v1/admin`
-- `/v1/attendance`
-- `/v1/shifts`
 - `/v1/pos/sales`
 - `/v1/cash-sessions`
 - `/v1/inventory`
@@ -188,6 +193,7 @@ Uso:
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, la respuesta se restringe a las sucursales asignadas en `branch_membership_scopes`
 
 Query params:
 
@@ -202,7 +208,7 @@ Uso:
 - crea un local dentro del tenant actual
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
-- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- requiere rol `SUPERADMIN | OWNER`
 - deja traza en `audit_log_tenant`
 
 Payload actual:
@@ -224,6 +230,7 @@ Uso:
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el `id` debe pertenecer a una sucursal asignada o responde `403`
 
 ### `PATCH /v1/branches/:id`
 
@@ -232,7 +239,7 @@ Uso:
 - actualiza un local por `id` dentro del tenant actual
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
-- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- requiere rol `SUPERADMIN | OWNER`
 - deja traza en `audit_log_tenant`
 
 ### `GET /v1/employees`
@@ -243,6 +250,7 @@ Uso:
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, la respuesta se restringe a colaboradores de sus sucursales asignadas
 
 Query params:
 
@@ -260,6 +268,7 @@ Uso:
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, `branchId` es obligatorio y debe pertenecer a su scope
 
 Payload actual:
 
@@ -282,6 +291,7 @@ Uso:
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el colaborador debe pertenecer a una sucursal asignada o responde `403`
 
 ### `PATCH /v1/employees/:id`
 
@@ -292,12 +302,149 @@ Uso:
 - requiere `X-Tenant-ID`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, el colaborador actual y el `branchId` destino deben pertenecer a su scope
+
+### `GET /v1/attendance`
+
+Uso:
+
+- listado paginado de marcaciones del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, la respuesta se restringe a sus sucursales asignadas
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+- `branchId` opcional
+- `employeeId` opcional
+- `eventType` opcional: `CHECK_IN | CHECK_OUT | BREAK_START | BREAK_END`
+- `from` opcional
+- `to` opcional
+
+### `POST /v1/attendance`
+
+Uso:
+
+- crea una marcación dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, `branchId` debe pertenecer a su scope
+
+Payload actual:
+
+```json
+{
+  "branchId": "uuid-branch",
+  "employeeId": "uuid-employee",
+  "eventType": "CHECK_IN",
+  "eventAt": "2026-06-15T12:00:00.000Z",
+  "source": "MANUAL",
+  "notes": "Ingreso manual"
+}
+```
+
+### `GET /v1/attendance/:id`
+
+Uso:
+
+- obtiene una marcación por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, la marcación debe pertenecer a una sucursal asignada o responde `403`
+
+### `PATCH /v1/attendance/:id`
+
+Uso:
+
+- actualiza una marcación por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, el registro actual y el `branchId` destino deben pertenecer a su scope
+
+### `GET /v1/shifts`
+
+Uso:
+
+- listado paginado de turnos del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, la respuesta se restringe a sus sucursales asignadas
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+- `branchId` opcional
+- `employeeId` opcional
+- `status` opcional: `SCHEDULED | PUBLISHED | CANCELLED | COMPLETED`
+- `from` opcional
+- `to` opcional
+
+### `POST /v1/shifts`
+
+Uso:
+
+- crea un turno dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, `branchId` debe pertenecer a su scope
+
+Payload actual:
+
+```json
+{
+  "branchId": "uuid-branch",
+  "employeeId": "uuid-opcional",
+  "startsAt": "2026-06-16T12:00:00.000Z",
+  "endsAt": "2026-06-16T20:00:00.000Z",
+  "status": "SCHEDULED",
+  "notes": "Turno apertura"
+}
+```
+
+### `GET /v1/shifts/:id`
+
+Uso:
+
+- obtiene un turno por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el turno debe pertenecer a una sucursal asignada o responde `403`
+
+### `PATCH /v1/shifts/:id`
+
+Uso:
+
+- actualiza un turno por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+- si actúa `BRANCH_ADMIN`, el turno actual y el `branchId` destino deben pertenecer a su scope
+
+## Notas de autorización vigentes
+
+- para endpoints tenant-scoped, `OWNER` y `BRANCH_ADMIN` se resuelven desde `company_memberships`
+- si no existe membership activa para el tenant actual, la API responde `403`
+- `SUPERADMIN` puede seguir operando como rol global
 
 ## Trabajo pendiente por Fase
 
 - Fase 1: cerrada en esta repo para `SaaS Core + Seguridad` base
-- Fase 2: `branches` y `employees` base implementados; faltan pruebas e2e completas y permisos finos
-- Fase 3: `attendance`, `shifts`
+- Fase 2: `branches` y `employees` base implementados con permisos finos iniciales y e2e de autorización
+- Fase 3: `attendance` y `shifts` base implementados con el mismo patrón de scope por sucursal
 - Fase 4: `pos`, `cash-sessions`, `sync`
 - Fase 5: `menu`, `inventory`
 - Fase 6: `payments`, `commissions`, `dashboards`, `exports`

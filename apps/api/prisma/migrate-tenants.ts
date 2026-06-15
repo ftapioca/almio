@@ -1,3 +1,4 @@
+import './load-env';
 import { PrismaClient } from '@prisma/client';
 import { applyTenantMigrations } from '../src/common/tenant/tenant-migration.util';
 

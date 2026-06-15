@@ -37,7 +37,7 @@ El MVP está orientado a restaurantes pequeños y locales de comida rápida, con
 
 ## Estado real del repositorio
 
-La repo quedó lista para iniciar `Fase 2 - Branches y Employees`.
+La repo ya implementa la base de `Fase 2 - Branches y Employees` y arrancó la base de `Fase 3 - Attendance y Shifts`.
 
 Implementado hoy:
 
@@ -52,6 +52,22 @@ Implementado hoy:
   - `GET /v1/admin/companies/:slug`
   - `POST /v1/admin/companies`
   - `GET /v1/admin/plans`
+  - `GET /v1/branches`
+  - `POST /v1/branches`
+  - `GET /v1/branches/:id`
+  - `PATCH /v1/branches/:id`
+  - `GET /v1/employees`
+  - `POST /v1/employees`
+  - `GET /v1/employees/:id`
+  - `PATCH /v1/employees/:id`
+  - `GET /v1/attendance`
+  - `POST /v1/attendance`
+  - `GET /v1/attendance/:id`
+  - `PATCH /v1/attendance/:id`
+  - `GET /v1/shifts`
+  - `POST /v1/shifts`
+  - `GET /v1/shifts/:id`
+  - `PATCH /v1/shifts/:id`
 - scaffold Next.js 15 para portal SaaS / futura PWA
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
@@ -60,10 +76,15 @@ Implementado hoy:
   - el login operativo vive en `Supabase Auth`
   - el backend Almio no expone hoy endpoints propios `login|logout|refresh`
   - la API valida JWT emitidos por Supabase y aplica RBAC/tenant resolution server-side
+- endurecimiento de autorización RRHH:
+  - sin membership activa en el tenant no se heredan roles de RRHH desde claims
+  - `OWNER` y `SUPERADMIN` pueden administrar catálogo de locales
+  - `BRANCH_ADMIN` queda restringido a sus sucursales asignadas para lecturas y gestión de colaboradores, asistencia y turnos
+- pruebas e2e HTTP para autorización negativa y aislamiento tenant en RRHH
 
 Pendiente para próximas fases:
 
-- módulos SaaS Core, RRHH, Asistencia, Turnos, POS, Menú, Inventario, Pagos y Dashboards
+- POS, menú, inventario, pagos y dashboards
 - SAST, observabilidad, backups, runbooks y hardening
 
 ## Cierre de Fase 1

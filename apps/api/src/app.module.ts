@@ -9,6 +9,8 @@ import { BranchesModule } from './modules/branches/branches.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { MeModule } from './modules/me/me.module';
     AuditModule,
     BranchesModule,
     EmployeesModule,
+    AttendanceModule,
+    ShiftsModule,
     HealthModule,
     MeModule,
   ],

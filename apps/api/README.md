@@ -19,12 +19,22 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - `POST /v1/employees`
 - `GET /v1/employees/:id`
 - `PATCH /v1/employees/:id`
+- `GET /v1/attendance`
+- `POST /v1/attendance`
+- `GET /v1/attendance/:id`
+- `PATCH /v1/attendance/:id`
+- `GET /v1/shifts`
+- `POST /v1/shifts`
+- `GET /v1/shifts/:id`
+- `PATCH /v1/shifts/:id`
 - `TenantResolverMiddleware` real por `Company`
 - `AuthGuard` real con JWT de Supabase
 - `RolesGuard`
+- `AuthorizationService` con scopes por sucursal para `BRANCH_ADMIN`
 - auditoría SaaS persistente
 - auditoría tenant para escrituras de `branches` y `employees`
 - `ValidationPipe` global
+- e2e HTTP para `403` y aislamiento tenant en RRHH
 
 ## Cierre operativo de Fase 1
 
@@ -57,6 +67,11 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
   - `branches`
   - `employees`
   - `audit_log_tenant`
+- tabla pública adicional para RRHH:
+  - `branch_membership_scopes`
+- tablas tenant iniciales de Fase 3:
+  - `attendance_records`
+  - `shifts`
 
 ## Nota de consistencia
 

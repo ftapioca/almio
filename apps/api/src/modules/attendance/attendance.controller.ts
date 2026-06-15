@@ -10,27 +10,27 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthUser } from '../../common/auth/auth-user.type';
-import { Roles } from '../../common/auth/roles.decorator';
 import { Role } from '../../common/auth/role.enum';
+import { Roles } from '../../common/auth/roles.decorator';
 import { TenantContext } from '../../common/tenant/tenant-context.type';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { ListEmployeesQueryDto } from './dto/list-employees.query';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { EmployeesService } from './employees.service';
+import { AttendanceService } from './attendance.service';
+import { CreateAttendanceRecordDto } from './dto/create-attendance-record.dto';
+import { ListAttendanceRecordsQueryDto } from './dto/list-attendance-records.query';
+import { UpdateAttendanceRecordDto } from './dto/update-attendance-record.dto';
 
 type TenantRequest = Request & { tenant: TenantContext; user?: AuthUser };
 
-@Controller('employees')
-export class EmployeesController {
-  constructor(private readonly employeesService: EmployeesService) {}
+@Controller('attendance')
+export class AttendanceController {
+  constructor(private readonly attendanceService: AttendanceService) {}
 
   @Get()
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async listEmployees(
-    @Query() query: ListEmployeesQueryDto,
+  async listAttendanceRecords(
+    @Query() query: ListAttendanceRecordsQueryDto,
     @Req() request: TenantRequest,
   ) {
-    const result = await this.employeesService.listEmployees(
+    const result = await this.attendanceService.listAttendanceRecords(
       request.tenant,
       query,
       request.user,
@@ -45,8 +45,11 @@ export class EmployeesController {
 
   @Get(':id')
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async getEmployeeById(@Param('id') id: string, @Req() request: TenantRequest) {
-    const employee = await this.employeesService.getEmployeeById(
+  async getAttendanceRecordById(
+    @Param('id') id: string,
+    @Req() request: TenantRequest,
+  ) {
+    const record = await this.attendanceService.getAttendanceRecordById(
       request.tenant,
       id,
       request.user,
@@ -54,17 +57,17 @@ export class EmployeesController {
 
     return {
       success: true,
-      data: employee,
+      data: record,
     };
   }
 
   @Post()
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async createEmployee(
-    @Body() dto: CreateEmployeeDto,
+  async createAttendanceRecord(
+    @Body() dto: CreateAttendanceRecordDto,
     @Req() request: TenantRequest,
   ) {
-    const employee = await this.employeesService.createEmployee(
+    const record = await this.attendanceService.createAttendanceRecord(
       request.tenant,
       dto,
       request.user,
@@ -72,18 +75,18 @@ export class EmployeesController {
 
     return {
       success: true,
-      data: employee,
+      data: record,
     };
   }
 
   @Patch(':id')
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
-  async updateEmployee(
+  async updateAttendanceRecord(
     @Param('id') id: string,
-    @Body() dto: UpdateEmployeeDto,
+    @Body() dto: UpdateAttendanceRecordDto,
     @Req() request: TenantRequest,
   ) {
-    const employee = await this.employeesService.updateEmployee(
+    const record = await this.attendanceService.updateAttendanceRecord(
       request.tenant,
       id,
       dto,
@@ -92,7 +95,7 @@ export class EmployeesController {
 
     return {
       success: true,
-      data: employee,
+      data: record,
     };
   }
 }

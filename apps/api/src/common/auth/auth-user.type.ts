@@ -7,5 +7,7 @@ export type AuthUser = {
   email: string | null;
   roles: Role[];
   tenantId: string | null;
+  membershipId: string | null;
+  branchScopeIds: string[];
   claims: JWTPayload;
 };

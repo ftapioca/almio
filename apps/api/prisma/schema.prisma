@@ -42,6 +42,7 @@ model Company {
 
   subscriptions Subscription[]
   memberships   CompanyMembership[]
+  branchScopes  BranchMembershipScope[]
   auditLogs     AuditLogSaaS[]
   saasPlan      SaaSPlan? @relation(fields: [saasPlanId], references: [id])
   country       Country?  @relation(fields: [countryCode], references: [code])
@@ -96,9 +97,26 @@ model CompanyMembership {
 
   company      Company     @relation(fields: [companyId], references: [id])
   userAccount  UserAccount @relation(fields: [userAccountId], references: [id])
+  branchScopes BranchMembershipScope[]
 
   @@unique([companyId, userAccountId], map: "company_membership_unique")
   @@map("company_memberships")
+}
+
+model BranchMembershipScope {
+  id           String            @id @default(uuid())
+  companyId     String            @map("company_id")
+  membershipId  String            @map("membership_id")
+  branchId      String            @map("branch_id")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  deletedAt     DateTime?         @map("deleted_at")
+
+  company       Company           @relation(fields: [companyId], references: [id])
+  membership    CompanyMembership @relation(fields: [membershipId], references: [id])
+
+  @@unique([companyId, membershipId, branchId], map: "branch_membership_scope_unique")
+  @@map("branch_membership_scopes")
 }
 
 model Country {

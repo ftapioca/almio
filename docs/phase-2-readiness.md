@@ -1,6 +1,6 @@
 # Fase 2 Readiness
 
-Checklist de arranque para `branches` y `employees`, derivado de `SoW`, `SDD`, `SRS`, `DocAPI` y `Cronograma`.
+Checklist de cierre para `branches` y `employees`, derivado de `SoW`, `SDD`, `SRS`, `DocAPI` y `Cronograma`.
 
 ## Precondiciones ya resueltas
 
@@ -43,15 +43,31 @@ Checklist de arranque para `branches` y `employees`, derivado de `SoW`, `SDD`, `
 - toda acción de escritura debe dejar traza de auditoría correspondiente
 - antes de merge, validar `pnpm lint`, `pnpm typecheck`, `pnpm test` y `pnpm build`
 
+## Endurecimientos completados
+
+- sin membership activa en el tenant no se heredan roles operativos de RRHH desde claims JWT
+- `BRANCH_ADMIN` usa scopes explícitos por sucursal en `public.branch_membership_scopes`
+- `BRANCH_ADMIN` puede leer sólo sucursales y colaboradores dentro de su alcance
+- `BRANCH_ADMIN` no puede crear ni editar catálogo de sucursales
+- pruebas e2e HTTP cubren:
+  - `403` sin membership activa
+  - `403` para acciones negativas de `BRANCH_ADMIN`
+  - aislamiento básico entre tenants
+
 ## Riesgos a controlar en Fase 2
 
 - drift entre provisioning baseline y contratos reales de `branches` y `employees`
-- ausencia de tests automáticos de tenant isolation
-- definición incompleta de permisos finos por rol para RRHH
+- gestión operativa de asignaciones en `branch_membership_scopes` mientras no exista UI/admin específico
+- necesidad de reutilizar el mismo patrón de scopes en `attendance` y `shifts`
 
 ## Próximos pasos sugeridos
 
-1. Completar pruebas end-to-end de `branches` y `employees` con datos reales.
-2. Definir permisos finos por rol para RRHH.
-3. Evaluar si `BranchGuard` debe entrar ya en Fase 2 o quedar para Fase 3.
+1. Reutilizar `branch_membership_scopes` en `attendance` y `shifts` desde el primer endpoint.
+2. Definir endpoint o flujo admin para asignar y revocar scopes de `BRANCH_ADMIN`.
+3. Extender pruebas e2e a casos de escritura reales con base de datos de integración.
 4. Extender auditoría tenant a lecturas sensibles si el SRS lo exige.
+
+## Estado posterior
+
+- `attendance` y `shifts` ya arrancaron reutilizando el mismo scope por sucursal
+- el flujo operativo actual para scopes es script-based vía `pnpm prisma:assign-branch-scopes`

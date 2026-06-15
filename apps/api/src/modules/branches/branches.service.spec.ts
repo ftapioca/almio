@@ -2,6 +2,11 @@ import { BranchesService } from './branches.service';
 
 describe('BranchesService', () => {
   it('uses the tenant schema passed by the resolver when listing branches', async () => {
+    const authorizationService = {
+      isBranchAdmin: jest.fn().mockReturnValue(false),
+      isSuperadmin: jest.fn().mockReturnValue(false),
+      isOwner: jest.fn().mockReturnValue(false),
+    };
     const tenantDatabase = {
       query: jest
         .fn()
@@ -10,6 +15,7 @@ describe('BranchesService', () => {
     };
     const auditService = {};
     const service = new BranchesService(
+      authorizationService as never,
       tenantDatabase as never,
       auditService as never,
     );

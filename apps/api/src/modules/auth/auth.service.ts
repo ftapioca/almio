@@ -33,24 +33,39 @@ export class AuthService {
     });
 
     const tenant = (request as Request & { tenant?: TenantContext }).tenant;
-    const roles = await this.resolveRolesForTenant(payload, tenant);
+    const access = await this.resolveAccessForTenant(payload, tenant);
 
     return {
       id: this.getRequiredStringClaim(payload, 'sub'),
       supabaseUserId: this.getRequiredStringClaim(payload, 'sub'),
       email: this.getOptionalStringClaim(payload, 'email'),
-      roles,
+      roles: access.roles,
       tenantId: tenant?.id ?? null,
+      membershipId: access.membershipId,
+      branchScopeIds: access.branchScopeIds,
       claims: payload,
     };
   }
 
-  private async resolveRolesForTenant(
+  private async resolveAccessForTenant(
     payload: JWTPayload,
     tenant?: TenantContext,
-  ): Promise<Role[]> {
+  ): Promise<{
+    roles: Role[];
+    membershipId: string | null;
+    branchScopeIds: string[];
+  }> {
+    const globalRoles = this.extractRolesFromClaims(payload);
+    const superadminRoles = globalRoles.includes(Role.SUPERADMIN)
+      ? [Role.SUPERADMIN]
+      : [];
+
     if (!tenant) {
-      return this.extractRolesFromClaims(payload);
+      return {
+        roles: globalRoles,
+        membershipId: null,
+        branchScopeIds: [],
+      };
     }
 
     const supabaseUserId = this.getRequiredStringClaim(payload, 'sub');
@@ -71,15 +86,33 @@ export class AuthService {
         },
       },
       select: {
+        id: true,
         role: true,
+        branchScopes: {
+          where: {
+            deletedAt: null,
+            companyId: tenant.id,
+          },
+          select: {
+            branchId: true,
+          },
+        },
       },
     });
 
     if (!membership) {
-      return this.extractRolesFromClaims(payload);
+      return {
+        roles: superadminRoles,
+        membershipId: null,
+        branchScopeIds: [],
+      };
     }
 
-    return this.normalizeRoles([membership.role]);
+    return {
+      roles: this.normalizeRoles([membership.role, ...superadminRoles]),
+      membershipId: membership.id,
+      branchScopeIds: membership.branchScopes.map((scope) => scope.branchId),
+    };
   }
 
   private extractRolesFromClaims(payload: JWTPayload): Role[] {

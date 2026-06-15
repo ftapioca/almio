@@ -14,11 +14,11 @@ Esta carpeta mantiene la trazabilidad entre los documentos base de Almio y el es
 
 | Documento base | Qué exige | Artefactos del repo relacionados | Estado actual |
 | --- | --- | --- | --- |
-| SoW | alcance MVP, stack, fases y criterios de aceptación | `README.md`, `docs/adr/`, `apps/` | alineado en Fase 0 |
-| SDD | arquitectura, multi-tenancy, RBAC, offline, API, seguridad | `docs/adr/`, `apps/api/src/common/`, `docs/api/` | parcialmente scaffolded |
-| SRS | requerimientos funcionales y no funcionales | `README.md`, `docs/api/`, futuros módulos | baseline documentado, no implementado aún |
-| DocAPI | contratos REST, headers, responses y patrones de código | `docs/api/README.md`, `apps/api/src/` | convenciones definidas; solo `health` implementado |
-| Cronograma | fases, tareas, hitos, entregables y runbooks | `README.md`, `docs/runbooks/`, `docs/adr/` | alineado a Fase 0 |
+| SoW | alcance MVP, stack, fases y criterios de aceptación | `README.md`, `docs/adr/`, `apps/` | alineado hasta Fase 3 base |
+| SDD | arquitectura, multi-tenancy, RBAC, offline, API, seguridad | `docs/adr/`, `apps/api/src/common/`, `docs/api/` | multi-tenancy y RBAC base operativos |
+| SRS | requerimientos funcionales y no funcionales | `README.md`, `docs/api/`, futuros módulos | RRHH, attendance y shifts base implementados |
+| DocAPI | contratos REST, headers, responses y patrones de código | `docs/api/README.md`, `apps/api/src/` | health, admin, RRHH, attendance y shifts documentados |
+| Cronograma | fases, tareas, hitos, entregables y runbooks | `README.md`, `docs/runbooks/`, `docs/adr/` | Fase 3 base iniciada; módulos posteriores pendientes |
 
 ## Regla operativa
 

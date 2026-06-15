@@ -21,6 +21,8 @@ El schema actual cubre el `schema public` descrito en SDD/SRS:
 - `pnpm prisma:generate`
 - `pnpm prisma:migrate:deploy`
 - `pnpm prisma:migrate:tenants`
+- `pnpm prisma:upsert-company-membership`
+- `pnpm prisma:assign-branch-scopes`
 - `pnpm prisma:promote-superadmin`
 - `pnpm prisma:seed`
 
@@ -40,7 +42,8 @@ Configuración recomendada con Supabase:
 - `DATABASE_URL`:
   usar `Shared Pooler / Session mode` (`aws-[region].pooler.supabase.com:5432`)
 - `DIRECT_URL`:
-  usar la conexión directa (`db.[project-ref].supabase.co:5432`)
+  preferir la conexión directa (`db.[project-ref].supabase.co:5432`) sólo si el entorno tiene IPv6 o el add-on IPv4
+  si el entorno es IPv4-only y Prisma Migrate falla con `Schema engine error`, usar también `Session mode` en `aws-[region].pooler.supabase.com:5432`
 
 Esto sigue la recomendación oficial de Supabase:
 
@@ -62,6 +65,7 @@ Objetivo actual del baseline tenant:
 - tabla `tenant_migrations` por schema para versionado
 - `tenant_settings` como metadata mínima
 - `branches` y `employees` como base de Fase 2
+- `attendance_records` y `shifts` como base de Fase 3
 - `audit_log_tenant` para trazabilidad operativa futura
 
 Comando para aplicar el baseline a tenants ya existentes:
@@ -87,6 +91,51 @@ Variables opcionales:
 - `SEED_OWNER_EMAIL`
 - `SEED_OWNER_NAME`
 - `SEED_OWNER_SUPABASE_USER_ID`
+
+## Asignación de scopes por sucursal
+
+El enforcement de `BRANCH_ADMIN` depende de `public.branch_membership_scopes`.
+
+Flujo operativo actual:
+
+1. crear o promover la `company_membership` con rol `BRANCH_ADMIN`
+2. crear las sucursales en el tenant
+3. asignar scopes con `pnpm prisma:assign-branch-scopes`
+
+Paso 1:
+
+```bash
+MEMBERSHIP_COMPANY_SLUG=almio \
+MEMBERSHIP_EMAIL=manager@almio.cl \
+MEMBERSHIP_ROLE=BRANCH_ADMIN \
+pnpm prisma:upsert-company-membership
+```
+
+Variables soportadas por `upsert-company-membership`:
+
+- `MEMBERSHIP_COMPANY_SLUG` requerido
+- `MEMBERSHIP_EMAIL` requerido
+- `MEMBERSHIP_ROLE` requerido
+- `MEMBERSHIP_FULL_NAME` opcional
+- `MEMBERSHIP_SUPABASE_USER_ID` opcional
+
+Variables soportadas por el script:
+
+- `SCOPE_COMPANY_SLUG` requerido
+- `SCOPE_EMAIL` o `SCOPE_SUPABASE_USER_ID` requerido
+- `SCOPE_BRANCH_IDS` opcional, csv de UUIDs
+- `SCOPE_BRANCH_CODES` opcional, csv de códigos de sucursal
+- `SCOPE_MODE` opcional: `replace` o `append`, default `replace`
+- `SCOPE_ROLE_EXPECTED` opcional, default `BRANCH_ADMIN`
+
+Ejemplo:
+
+```bash
+SCOPE_COMPANY_SLUG=almio \
+SCOPE_EMAIL=manager@almio.cl \
+SCOPE_BRANCH_CODES=CASA-MATRIZ,SUCURSAL-2 \
+pnpm prisma:assign-branch-scopes
+```
 
 ## Promoción temporal a SUPERADMIN
 

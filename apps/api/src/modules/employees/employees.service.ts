@@ -1,9 +1,11 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { AuthUser } from '../../common/auth/auth-user.type';
+import { AuthorizationService } from '../../common/auth/authorization.service';
 import { TenantContext } from '../../common/tenant/tenant-context.type';
 import { TenantDatabaseService } from '../../common/tenant/tenant-database.service';
 import { AuditService } from '../audit/audit.service';
@@ -27,13 +29,19 @@ type EmployeeRecord = {
 @Injectable()
 export class EmployeesService {
   constructor(
+    private readonly authorizationService: AuthorizationService,
     private readonly tenantDatabase: TenantDatabaseService,
     private readonly auditService: AuditService,
   ) {}
 
-  async listEmployees(tenant: TenantContext, query: ListEmployeesQueryDto) {
+  async listEmployees(
+    tenant: TenantContext,
+    query: ListEmployeesQueryDto,
+    user?: AuthUser,
+  ) {
     const filters = ['e."deleted_at" IS NULL'];
     const params: unknown[] = [];
+    const scopedBranchIds = this.getScopedBranchIds(user);
 
     if (query.status) {
       params.push(query.status);
@@ -41,8 +49,14 @@ export class EmployeesService {
     }
 
     if (query.branchId) {
+      this.assertCanAccessBranch(user, query.branchId);
       params.push(query.branchId);
       filters.push(`e."branch_id" = $${params.length}::uuid`);
+    }
+
+    if (scopedBranchIds) {
+      params.push(scopedBranchIds);
+      filters.push(`e."branch_id" = ANY($${params.length}::uuid[])`);
     }
 
     params.push((query.page - 1) * query.limit);
@@ -91,12 +105,17 @@ export class EmployeesService {
     };
   }
 
-  async getEmployeeById(tenant: TenantContext, employeeId: string) {
+  async getEmployeeById(
+    tenant: TenantContext,
+    employeeId: string,
+    user?: AuthUser,
+  ) {
     const employee = await this.findEmployeeById(tenant, employeeId);
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
 
+    this.assertCanAccessBranch(user, employee.branchId);
     return employee;
   }
 
@@ -105,6 +124,8 @@ export class EmployeesService {
     dto: CreateEmployeeDto,
     user?: AuthUser,
   ) {
+    this.assertCanCreateOrMoveEmployee(user, dto.branchId ?? null);
+
     if (dto.branchId) {
       await this.ensureBranchExists(tenant, dto.branchId);
     }
@@ -162,6 +183,12 @@ export class EmployeesService {
     if (!existing) {
       throw new NotFoundException('Employee not found');
     }
+
+    this.assertCanAccessBranch(user, existing.branchId);
+    this.assertCanCreateOrMoveEmployee(
+      user,
+      dto.branchId !== undefined ? dto.branchId : existing.branchId,
+    );
 
     if (dto.branchId) {
       await this.ensureBranchExists(tenant, dto.branchId);
@@ -310,5 +337,45 @@ export class EmployeesService {
     if (existing) {
       throw new ConflictException('Employee email already exists');
     }
+  }
+
+  private getScopedBranchIds(user?: AuthUser): string[] | null {
+    if (
+      !this.authorizationService.isBranchAdmin(user) ||
+      this.authorizationService.isSuperadmin(user) ||
+      this.authorizationService.isOwner(user)
+    ) {
+      return null;
+    }
+
+    this.authorizationService.enforceBranchScopeConfigured(user);
+    return this.authorizationService.getBranchScopeIds(user);
+  }
+
+  private assertCanAccessBranch(user: AuthUser | undefined, branchId: string | null) {
+    if (!this.authorizationService.isBranchAdmin(user)) {
+      return;
+    }
+
+    if (!this.authorizationService.canAccessBranch(user, branchId)) {
+      throw new ForbiddenException('Branch scope forbidden');
+    }
+  }
+
+  private assertCanCreateOrMoveEmployee(
+    user: AuthUser | undefined,
+    branchId: string | null,
+  ) {
+    if (!this.authorizationService.isBranchAdmin(user)) {
+      return;
+    }
+
+    if (!branchId) {
+      throw new ForbiddenException(
+        'Branch admin can only manage employees assigned to an allowed branch',
+      );
+    }
+
+    this.authorizationService.assertCanAccessBranch(user, branchId);
   }
 }

@@ -2,6 +2,11 @@ import { EmployeesService } from './employees.service';
 
 describe('EmployeesService', () => {
   it('uses the tenant schema passed by the resolver when listing employees', async () => {
+    const authorizationService = {
+      isBranchAdmin: jest.fn().mockReturnValue(false),
+      isSuperadmin: jest.fn().mockReturnValue(false),
+      isOwner: jest.fn().mockReturnValue(false),
+    };
     const tenantDatabase = {
       query: jest
         .fn()
@@ -10,6 +15,7 @@ describe('EmployeesService', () => {
     };
     const auditService = {};
     const service = new EmployeesService(
+      authorizationService as never,
       tenantDatabase as never,
       auditService as never,
     );
