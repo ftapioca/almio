@@ -34,10 +34,10 @@ Entregar `SaaS Core + Seguridad` con:
 
 ## Siguiente secuencia recomendada
 
-1. Agregar CI mínima con `lint`, `typecheck`, `test` y `build`.
-2. Incorporar SAST básico según cronograma.
-3. Continuar con `auth/login|logout|refresh` o documentar explícitamente que el login operativo depende de Supabase Auth externo.
-4. Empezar Fase 2 sobre `branches` y `employees`, aprovechando el baseline tenant ya provisionado.
+1. Incorporar SAST básico según cronograma.
+2. Continuar con `auth/login|logout|refresh` o documentar explícitamente que el login operativo depende de Supabase Auth externo.
+3. Empezar Fase 2 sobre `branches` y `employees`, aprovechando el baseline tenant ya provisionado.
+4. Agregar tests automáticos de tenant isolation antes de beta.
 
 ## Restricción importante
 

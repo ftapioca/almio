@@ -37,22 +37,31 @@ El MVP está orientado a restaurantes pequeños y locales de comida rápida, con
 
 ## Estado real del repositorio
 
-La repo está en `Fase 0 - Fundaciones`.
+La repo ya está en transición a `Fase 1 - SaaS Core + Seguridad`.
 
 Implementado hoy:
 
 - monorepo `pnpm` con `apps/api` y `apps/web`
-- scaffold NestJS con `TenantResolverMiddleware`, `RolesGuard`, `AuditInterceptor` y `GET /v1/health`
+- backend NestJS con `TenantResolverMiddleware`, `AuthGuard`, `RolesGuard`, auditoría base y `GET /v1/health`
+- Prisma operativo sobre Supabase para `schema public`
+- seed de `SaaS Core` y provisioning tenant-aware con baseline versionado por schema
+- endpoints funcionales:
+  - `GET /v1/me`
+  - `GET /v1/me/owner`
+  - `GET /v1/admin/companies`
+  - `GET /v1/admin/companies/:slug`
+  - `POST /v1/admin/companies`
+  - `GET /v1/admin/plans`
 - scaffold Next.js 15 para portal SaaS / futura PWA
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
+- workflow de CI para `lint`, `typecheck`, `test` y `build`
 
 Pendiente para próximas fases:
 
-- Supabase real, Prisma operativo y migraciones tenant-aware
-- auth real con Supabase Auth
+- endpoints propios de `auth/login|logout|refresh` o cierre explícito de que el login vive solo en Supabase Auth
 - módulos SaaS Core, RRHH, Asistencia, Turnos, POS, Menú, Inventario, Pagos y Dashboards
-- CI/CD, SAST, observabilidad, backups, runbooks y hardening
+- SAST, observabilidad, backups, runbooks y hardening
 
 ## Estructura
 
