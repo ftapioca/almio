@@ -14,7 +14,7 @@ Checklist de arranque para `branches` y `employees`, derivado de `SoW`, `SDD`, `
   - login, logout y refresh viven en `Supabase Auth`
   - la API Almio consume JWTs ya emitidos
 
-## Scope recomendado para abrir Fase 2
+## Scope ya implementado en este arranque de Fase 2
 
 1. `GET /v1/branches`
 2. `POST /v1/branches`
@@ -24,6 +24,16 @@ Checklist de arranque para `branches` y `employees`, derivado de `SoW`, `SDD`, `
 6. `POST /v1/employees`
 7. `GET /v1/employees/:id`
 8. `PATCH /v1/employees/:id`
+
+## Estrategia elegida para acceso tenant
+
+- Prisma sigue siendo la capa principal para `schema public`.
+- Para data operativa por tenant se usa `SQL directo encapsulado` sobre Prisma raw queries.
+- El acceso pasa por `TenantDatabaseService`, que:
+  - valida `schemaName` con whitelist estricta
+  - interpola sólo schemas `tenant_*`
+  - evita mezclar tablas tenant con `public`
+- Esta decisión minimiza drift mientras todavía no existe un segundo schema Prisma específico por tenant.
 
 ## Reglas de implementación
 
@@ -39,9 +49,9 @@ Checklist de arranque para `branches` y `employees`, derivado de `SoW`, `SDD`, `
 - ausencia de tests automáticos de tenant isolation
 - definición incompleta de permisos finos por rol para RRHH
 
-## Primeros pasos sugeridos
+## Próximos pasos sugeridos
 
-1. Definir DTOs y contratos REST de `branches`.
-2. Elegir estrategia de acceso a schemas tenant desde Prisma o SQL directo encapsulado.
-3. Implementar CRUD mínimo de `branches`.
-4. Repetir patrón para `employees`.
+1. Completar pruebas end-to-end de `branches` y `employees` con datos reales.
+2. Definir permisos finos por rol para RRHH.
+3. Evaluar si `BranchGuard` debe entrar ya en Fase 2 o quedar para Fase 3.
+4. Extender auditoría tenant a lecturas sensibles si el SRS lo exige.

@@ -5,6 +5,8 @@ import { TenantResolverMiddleware } from './common/tenant/tenant-resolver.middle
 import { AdminModule } from './modules/admin/admin.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BranchesModule } from './modules/branches/branches.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
 
@@ -15,6 +17,8 @@ import { MeModule } from './modules/me/me.module';
     AuthModule,
     AdminModule,
     AuditModule,
+    BranchesModule,
+    EmployeesModule,
     HealthModule,
     MeModule,
   ],

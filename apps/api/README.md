@@ -11,10 +11,19 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - `GET /v1/admin/companies/:slug`
 - `POST /v1/admin/companies`
 - `GET /v1/admin/plans`
+- `GET /v1/branches`
+- `POST /v1/branches`
+- `GET /v1/branches/:id`
+- `PATCH /v1/branches/:id`
+- `GET /v1/employees`
+- `POST /v1/employees`
+- `GET /v1/employees/:id`
+- `PATCH /v1/employees/:id`
 - `TenantResolverMiddleware` real por `Company`
 - `AuthGuard` real con JWT de Supabase
 - `RolesGuard`
 - auditoría SaaS persistente
+- auditoría tenant para escrituras de `branches` y `employees`
 - `ValidationPipe` global
 
 ## Cierre operativo de Fase 1
@@ -37,6 +46,17 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
   - iniciar sesión contra Supabase
   - refrescar sesión usando el SDK de Supabase
   - enviar `Authorization: Bearer <jwt>` a Almio
+
+## Estrategia tenant actual
+
+- `schema public`: Prisma ORM para SaaS Core
+- `schema tenant_*`: SQL directo encapsulado en `TenantDatabaseService`
+- validación estricta de nombres de schema antes de interpolar SQL
+- tablas operativas iniciales:
+  - `tenant_settings`
+  - `branches`
+  - `employees`
+  - `audit_log_tenant`
 
 ## Nota de consistencia
 

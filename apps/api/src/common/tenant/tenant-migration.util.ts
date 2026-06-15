@@ -18,6 +18,11 @@ export function assertTenantSchemaName(schemaName: string) {
   }
 }
 
+export function quoteTenantSchemaName(schemaName: string) {
+  assertTenantSchemaName(schemaName);
+  return `"${schemaName}"`;
+}
+
 export function loadTenantMigrationFiles(): TenantMigrationFile[] {
   const migrationsDir = resolveTenantMigrationsDir();
 
@@ -37,7 +42,7 @@ export async function applyTenantMigrations(
 ) {
   assertTenantSchemaName(schemaName);
 
-  const quotedSchemaName = `"${schemaName}"`;
+  const quotedSchemaName = quoteTenantSchemaName(schemaName);
   const migrations = loadTenantMigrationFiles();
   let appliedCount = 0;
 

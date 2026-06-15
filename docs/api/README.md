@@ -52,6 +52,14 @@ Implementado hoy:
 - `GET /v1/admin/companies/:slug`
 - `POST /v1/admin/companies`
 - `GET /v1/admin/plans`
+- `GET /v1/branches`
+- `POST /v1/branches`
+- `GET /v1/branches/:id`
+- `PATCH /v1/branches/:id`
+- `GET /v1/employees`
+- `POST /v1/employees`
+- `GET /v1/employees/:id`
+- `PATCH /v1/employees/:id`
 
 Decisión explícita de autenticación vigente:
 
@@ -63,8 +71,6 @@ Planificado según documentos base:
 
 - `/v1/auth`
 - `/v1/admin`
-- `/v1/branches`
-- `/v1/employees`
 - `/v1/attendance`
 - `/v1/shifts`
 - `/v1/pos/sales`
@@ -174,10 +180,123 @@ Query params:
 - `page` default `1`
 - `limit` default `20`, max `100`
 
+### `GET /v1/branches`
+
+Uso:
+
+- listado paginado de locales del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+- `status` opcional: `ACTIVE | INACTIVE`
+
+### `POST /v1/branches`
+
+Uso:
+
+- crea un local dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+
+Payload actual:
+
+```json
+{
+  "code": "CASA-MATRIZ",
+  "name": "Casa Matriz",
+  "status": "ACTIVE",
+  "timezone": "America/Santiago"
+}
+```
+
+### `GET /v1/branches/:id`
+
+Uso:
+
+- obtiene un local por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+
+### `PATCH /v1/branches/:id`
+
+Uso:
+
+- actualiza un local por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+
+### `GET /v1/employees`
+
+Uso:
+
+- listado paginado de colaboradores del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+- `status` opcional: `ACTIVE | INACTIVE`
+- `branchId` opcional
+
+### `POST /v1/employees`
+
+Uso:
+
+- crea un colaborador dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+
+Payload actual:
+
+```json
+{
+  "branchId": "uuid-opcional",
+  "firstName": "Felipe",
+  "lastName": "Tapioca",
+  "email": "felipe@almio.cl",
+  "phone": "+56911111111",
+  "status": "ACTIVE"
+}
+```
+
+### `GET /v1/employees/:id`
+
+Uso:
+
+- obtiene un colaborador por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+
+### `PATCH /v1/employees/:id`
+
+Uso:
+
+- actualiza un colaborador por `id` dentro del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- deja traza en `audit_log_tenant`
+
 ## Trabajo pendiente por Fase
 
 - Fase 1: cerrada en esta repo para `SaaS Core + Seguridad` base
-- Fase 2: `branches`, `employees`
+- Fase 2: `branches` y `employees` base implementados; faltan pruebas e2e completas y permisos finos
 - Fase 3: `attendance`, `shifts`
 - Fase 4: `pos`, `cash-sessions`, `sync`
 - Fase 5: `menu`, `inventory`
