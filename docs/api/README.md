@@ -51,6 +51,7 @@ Implementado hoy:
 - `GET /v1/admin/companies`
 - `GET /v1/admin/companies/:slug`
 - `POST /v1/admin/companies`
+- `GET /v1/admin/plans`
 
 Planificado según documentos base:
 
@@ -116,7 +117,7 @@ Uso:
 
 Uso:
 
-- crea empresa, `subscription`, owner local y `schema tenant_{slug}`
+- crea empresa, `subscription`, owner local y ejecuta provisioning del tenant
 - requiere `Authorization`
 - requiere rol `SUPERADMIN`
 
@@ -133,9 +134,31 @@ Payload actual:
 }
 ```
 
+Provisioning actual del tenant:
+
+- `CREATE SCHEMA IF NOT EXISTS tenant_{slug}`
+- `tenant_migrations`
+- `tenant_settings`
+- `branches`
+- `employees`
+- `audit_log_tenant`
+
+### `GET /v1/admin/plans`
+
+Uso:
+
+- listado paginado de planes SaaS disponibles
+- requiere `Authorization`
+- requiere rol `SUPERADMIN`
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+
 ## Trabajo pendiente por Fase
 
-- Fase 1: `auth`, `admin` create/list/read, tenant resolver real, RBAC, auditoría
+- Fase 1: `auth`, `admin` create/list/read, `admin/plans`, tenant resolver real, RBAC, auditoría, tenant provisioning baseline
 - Fase 2: `branches`, `employees`
 - Fase 3: `attendance`, `shifts`
 - Fase 4: `pos`, `cash-sessions`, `sync`

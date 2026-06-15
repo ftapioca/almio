@@ -1,13 +1,26 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { AuthUser } from '../../common/auth/auth-user.type';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TenantProvisioningService } from '../../common/tenant/tenant-provisioning.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { ListCompaniesQueryDto } from './dto/list-companies.query';
+import { ListPlansQueryDto } from './dto/list-plans.query';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantProvisioningService: TenantProvisioningService,
+    private readonly auditService: AuditService,
+  ) {}
 
-  async listCompanies(query: ListCompaniesQueryDto) {
+  async listCompanies(query: ListCompaniesQueryDto, user?: AuthUser) {
     const where = {
       deletedAt: null,
       ...(query.status ? { status: query.status } : {}),
@@ -41,7 +54,7 @@ export class AdminService {
       this.prisma.company.count({ where }),
     ]);
 
-    return {
+    const result = {
       items,
       meta: {
         page: query.page,
@@ -49,10 +62,77 @@ export class AdminService {
         total,
       },
     };
+
+    await this.auditService.log({
+      action: 'ADMIN_COMPANIES_LIST',
+      resource: 'companies',
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        page: query.page,
+        limit: query.limit,
+        status: query.status ?? null,
+        total,
+      },
+    });
+
+    return result;
   }
 
-  async getCompanyBySlug(slug: string) {
-    return this.prisma.company.findFirstOrThrow({
+  async listPlans(query: ListPlansQueryDto, user?: AuthUser) {
+    const [items, total] = await Promise.all([
+      this.prisma.saaSPlan.findMany({
+        where: {
+          deletedAt: null,
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        orderBy: {
+          createdAt: 'asc',
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          maxCompanies: true,
+          maxBranches: true,
+          maxEmployees: true,
+          maxUsers: true,
+          priceMonthly: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.saaSPlan.count({
+        where: {
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    const result = {
+      items,
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    };
+
+    await this.auditService.log({
+      action: 'ADMIN_PLANS_LIST',
+      resource: 'saas_plans',
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    });
+
+    return result;
+  }
+
+  async getCompanyBySlug(slug: string, user?: AuthUser) {
+    const company = await this.prisma.company.findFirstOrThrow({
       where: {
         slug,
         deletedAt: null,
@@ -91,9 +171,21 @@ export class AdminService {
         },
       },
     });
+
+    await this.auditService.log({
+      action: 'ADMIN_COMPANIES_GET',
+      resource: 'companies',
+      companyId: company.id,
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        slug,
+      },
+    });
+
+    return company;
   }
 
-  async createCompany(dto: CreateCompanyDto) {
+  async createCompany(dto: CreateCompanyDto, user?: AuthUser) {
     const schemaName = this.buildSchemaName(dto.slug);
 
     const [existingCompany, plan, country, currency] = await Promise.all([
@@ -197,23 +289,81 @@ export class AdminService {
       };
     });
 
-    await this.createTenantSchema(schemaName);
+    try {
+      await this.tenantProvisioningService.provisionSchema(schemaName);
+    } catch (error) {
+      await this.markCompanyProvisioningFailed(result.company.id);
 
-    return {
+      await this.auditService.log({
+        action: 'ADMIN_COMPANIES_PROVISION_FAILED',
+        resource: 'companies',
+        companyId: result.company.id,
+        userAccountId: await this.resolveUserAccountId(user),
+        details: {
+          slug: result.company.slug,
+          schemaName: result.company.schemaName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      });
+
+      throw new InternalServerErrorException(
+        'Company created but tenant provisioning failed',
+      );
+    }
+
+    const response = {
       ...result.company,
       ownerEmail: result.ownerEmail,
     };
+
+    await this.auditService.log({
+      action: 'ADMIN_COMPANIES_CREATE',
+      resource: 'companies',
+      companyId: result.company.id,
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        slug: result.company.slug,
+        schemaName: result.company.schemaName,
+        ownerEmail: result.ownerEmail,
+      },
+    });
+
+    return response;
   }
 
   private buildSchemaName(slug: string): string {
     return `tenant_${slug.replace(/-/g, '_')}`;
   }
 
-  private async createTenantSchema(schemaName: string) {
-    if (!/^tenant_[a-z0-9_]+$/.test(schemaName)) {
-      throw new BadRequestException('Invalid tenant schema name');
+  private async resolveUserAccountId(user?: AuthUser): Promise<string | null> {
+    if (!user?.email && !user?.supabaseUserId) {
+      return null;
     }
 
-    await this.prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+    const account = await this.prisma.userAccount.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          ...(user.supabaseUserId ? [{ supabaseUserId: user.supabaseUserId }] : []),
+          ...(user.email ? [{ email: user.email }] : []),
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return account?.id ?? null;
+  }
+
+  private async markCompanyProvisioningFailed(companyId: string) {
+    await this.prisma.company.update({
+      where: {
+        id: companyId,
+      },
+      data: {
+        status: 'SUSPENDED',
+      },
+    });
   }
 }

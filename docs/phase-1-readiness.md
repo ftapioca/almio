@@ -34,12 +34,10 @@ Entregar `SaaS Core + Seguridad` con:
 
 ## Siguiente secuencia recomendada
 
-1. Persistir `AuditLogSaaS` en acciones críticas de `admin/companies`.
-2. Exponer `GET /v1/admin/plans` para evitar depender de consultas internas al crear empresas.
-3. Implementar provisioning tenant-aware más allá de `CREATE SCHEMA`, incluyendo bootstrap mínimo del schema nuevo.
-4. Agregar CI mínima con `lint`, `typecheck`, `test` y `build`.
-5. Incorporar SAST básico según cronograma.
-6. Continuar con `auth/login|logout|refresh` o documentar explícitamente que el login operativo depende de Supabase Auth externo.
+1. Agregar CI mínima con `lint`, `typecheck`, `test` y `build`.
+2. Incorporar SAST básico según cronograma.
+3. Continuar con `auth/login|logout|refresh` o documentar explícitamente que el login operativo depende de Supabase Auth externo.
+4. Empezar Fase 2 sobre `branches` y `employees`, aprovechando el baseline tenant ya provisionado.
 
 ## Restricción importante
 

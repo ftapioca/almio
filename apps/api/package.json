@@ -6,6 +6,7 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\"",
+    "prisma:migrate:tenants": "ts-node prisma/migrate-tenants.ts",
     "prisma:format": "prisma format",
     "prisma:promote-superadmin": "ts-node prisma/promote-superadmin.ts",
     "prisma:seed": "ts-node prisma/seed.ts",
