@@ -81,11 +81,32 @@ Implementado hoy:
   - `OWNER` y `SUPERADMIN` pueden administrar catálogo de locales
   - `BRANCH_ADMIN` queda restringido a sus sucursales asignadas para lecturas y gestión de colaboradores, asistencia y turnos
 - pruebas e2e HTTP para autorización negativa y aislamiento tenant en RRHH
+- validación real de login/consumo con `Supabase Auth` usando `branch-admin@almio.cl`
+- reglas de negocio iniciales ya activas:
+  - `attendance`: secuencia válida `CHECK_IN -> BREAK_START|CHECK_OUT -> BREAK_END -> CHECK_OUT`
+  - `shifts`: prevención de traslapes por colaborador y transición de estados básica
 
 Pendiente para próximas fases:
 
 - POS, menú, inventario, pagos y dashboards
 - SAST, observabilidad, backups, runbooks y hardening
+
+## Próxima sesión recomendada
+
+Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
+
+1. cerrar `Fase 3` a nivel de contratos y reglas:
+   - endurecer transiciones de estado de `shifts`
+   - completar casos reales de `attendance` (`BREAK_START`, `BREAK_END`, `CHECK_OUT`)
+2. extender pruebas e2e reales de autorización para `BRANCH_ADMIN`:
+   - accesos negativos fuera de scope en `attendance` y `shifts`
+   - escrituras negativas contra sucursales no asignadas
+3. definir administración operativa de `branch_membership_scopes`:
+   - endpoint admin o backoffice
+   - alta, reemplazo y revocación de scopes sin depender de scripts
+4. recién después abrir el siguiente bloque funcional:
+   - `attendance/shifts` UI
+   - o `BranchGuard` si aparece una necesidad transversal no resuelta por el patrón actual
 
 ## Cierre de Fase 1
 

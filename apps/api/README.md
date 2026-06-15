@@ -35,6 +35,8 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - auditoría tenant para escrituras de `branches` y `employees`
 - `ValidationPipe` global
 - e2e HTTP para `403` y aislamiento tenant en RRHH
+- scripts de login y consumo real con `Supabase Auth` para validar `BRANCH_ADMIN`
+- reglas de negocio base en `attendance` y `shifts`
 
 ## Cierre operativo de Fase 1
 
@@ -72,6 +74,22 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - tablas tenant iniciales de Fase 3:
   - `attendance_records`
   - `shifts`
+
+## Validación real ya ejecutada
+
+- existe un usuario real `branch-admin@almio.cl` en `almio` con rol `BRANCH_ADMIN`
+- ese usuario ya fue validado contra la API local usando JWT emitido por Supabase
+- los endpoints `branches`, `employees`, `attendance` y `shifts` ya respondieron `200` dentro de scope
+- también se validaron por HTTP real:
+  - secuencia inválida de `attendance` con respuesta `400`
+  - traslape de `shifts` con respuesta `400`
+
+## Próximo checkpoint recomendado
+
+1. agregar pruebas e2e reales negativas para `attendance` y `shifts` fuera de scope
+2. formalizar flujo de administración de `branch_membership_scopes` sin depender sólo de scripts
+3. definir si las transiciones de `shifts` seguirán en `PATCH` genérico o pasarán a comandos explícitos `publish|cancel|complete`
+4. iniciar la capa web sólo después de fijar esos contratos
 
 ## Nota de consistencia
 

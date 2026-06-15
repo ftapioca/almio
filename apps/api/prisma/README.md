@@ -22,7 +22,10 @@ El schema actual cubre el `schema public` descrito en SDD/SRS:
 - `pnpm prisma:migrate:deploy`
 - `pnpm prisma:migrate:tenants`
 - `pnpm prisma:upsert-company-membership`
+- `pnpm prisma:provision-supabase-auth-user`
 - `pnpm prisma:assign-branch-scopes`
+- `pnpm prisma:login-and-test-branch-admin`
+- `pnpm prisma:exercise-branch-admin-business-rules`
 - `pnpm prisma:promote-superadmin`
 - `pnpm prisma:seed`
 
@@ -136,6 +139,24 @@ SCOPE_EMAIL=manager@almio.cl \
 SCOPE_BRANCH_CODES=CASA-MATRIZ,SUCURSAL-2 \
 pnpm prisma:assign-branch-scopes
 ```
+
+## Flujo real validado para `BRANCH_ADMIN`
+
+El flujo que ya quedó probado de punta a punta es:
+
+1. crear o actualizar membership con `pnpm prisma:upsert-company-membership`
+2. provisionar usuario real en Supabase Auth con `pnpm prisma:provision-supabase-auth-user`
+3. asignar scopes con `pnpm prisma:assign-branch-scopes`
+4. validar login y lecturas con `pnpm prisma:login-and-test-branch-admin`
+5. validar reglas de negocio de `attendance/shifts` con `pnpm prisma:exercise-branch-admin-business-rules`
+
+Esto ya fue ejecutado sobre `almio` con `branch-admin@almio.cl`.
+
+## Nota para la siguiente sesión
+
+- `prisma migrate deploy` ya está estabilizado usando el pooler `session mode` en `DIRECT_URL`
+- el siguiente trabajo de datos no es otra migración pública grande, sino administración operativa de `branch_membership_scopes`
+- si se rota `SUPABASE_SERVICE_ROLE_KEY`, hay que actualizar el `.env` antes de volver a usar los scripts de provisión o prueba real
 
 ## Promoción temporal a SUPERADMIN
 

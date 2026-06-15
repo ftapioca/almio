@@ -324,6 +324,10 @@ Query params:
 - `from` opcional
 - `to` opcional
 
+Regla de negocio ya activa:
+
+- no se permiten secuencias inválidas de eventos por colaborador
+
 ### `POST /v1/attendance`
 
 Uso:
@@ -348,6 +352,8 @@ Payload actual:
 }
 ```
 
+La API rechaza hoy, por ejemplo, un segundo `CHECK_IN` consecutivo para el mismo colaborador.
+
 ### `GET /v1/attendance/:id`
 
 Uso:
@@ -368,6 +374,7 @@ Uso:
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, el registro actual y el `branchId` destino deben pertenecer a su scope
+- si cambia `eventType`, vuelve a validar la secuencia permitida
 
 ### `GET /v1/shifts`
 
@@ -388,6 +395,14 @@ Query params:
 - `status` opcional: `SCHEDULED | PUBLISHED | CANCELLED | COMPLETED`
 - `from` opcional
 - `to` opcional
+
+Reglas de negocio ya activas:
+
+- no se permiten traslapes con otros turnos no cancelados del mismo colaborador
+- las transiciones válidas hoy son:
+  - `SCHEDULED -> PUBLISHED | CANCELLED`
+  - `PUBLISHED -> COMPLETED | CANCELLED`
+  - `COMPLETED` y `CANCELLED` quedan terminales
 
 ### `POST /v1/shifts`
 
@@ -433,6 +448,7 @@ Uso:
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, el turno actual y el `branchId` destino deben pertenecer a su scope
+- valida traslapes y transiciones de estado
 
 ## Notas de autorización vigentes
 
@@ -448,3 +464,9 @@ Uso:
 - Fase 4: `pos`, `cash-sessions`, `sync`
 - Fase 5: `menu`, `inventory`
 - Fase 6: `payments`, `commissions`, `dashboards`, `exports`
+
+## Próximos contratos a cerrar
+
+- decidir si `shifts` seguirá con `PATCH` genérico o se dividirá en comandos explícitos `publish`, `cancel` y `complete`
+- definir contrato administrativo para alta, reemplazo y revocación de `branch_membership_scopes`
+- decidir si `attendance` requerirá `Idempotency-Key` obligatoria antes de abrir el flujo offline-first
