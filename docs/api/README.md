@@ -46,6 +46,11 @@ Respuesta de error estándar:
 Implementado hoy:
 
 - `GET /v1/health`
+- `GET /v1/me`
+- `GET /v1/me/owner`
+- `GET /v1/admin/companies`
+- `GET /v1/admin/companies/:slug`
+- `POST /v1/admin/companies`
 
 Planificado según documentos base:
 
@@ -84,9 +89,53 @@ Respuesta actual:
 }
 ```
 
+### `GET /v1/admin/companies`
+
+Uso:
+
+- listado paginado de empresas del SaaS Core
+- requiere `Authorization: Bearer <jwt>`
+- requiere rol efectivo `SUPERADMIN`
+- hoy se usa junto a `X-Tenant-ID` por el flujo actual del middleware
+
+Query params:
+
+- `page` default `1`
+- `limit` default `20`, max `100`
+- `status` opcional: `ACTIVE | SUSPENDED | CANCELLED`
+
+### `GET /v1/admin/companies/:slug`
+
+Uso:
+
+- obtiene el detalle de una empresa por `slug`
+- requiere `Authorization`
+- requiere rol `SUPERADMIN`
+
+### `POST /v1/admin/companies`
+
+Uso:
+
+- crea empresa, `subscription`, owner local y `schema tenant_{slug}`
+- requiere `Authorization`
+- requiere rol `SUPERADMIN`
+
+Payload actual:
+
+```json
+{
+  "name": "Nueva Empresa",
+  "slug": "nueva-empresa",
+  "planId": "uuid-del-plan",
+  "country": "CL",
+  "currency": "CLP",
+  "ownerEmail": "owner@empresa.cl"
+}
+```
+
 ## Trabajo pendiente por Fase
 
-- Fase 1: `auth`, `admin`, tenant resolver real, RBAC, auditoría
+- Fase 1: `auth`, `admin` create/list/read, tenant resolver real, RBAC, auditoría
 - Fase 2: `branches`, `employees`
 - Fase 3: `attendance`, `shifts`
 - Fase 4: `pos`, `cash-sessions`, `sync`

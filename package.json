@@ -16,6 +16,7 @@
     "lint": "pnpm -r lint",
     "prisma:generate": "pnpm --filter @almio/api prisma:generate",
     "prisma:migrate:deploy": "pnpm --filter @almio/api prisma:migrate:deploy",
+    "prisma:promote-superadmin": "pnpm --filter @almio/api prisma:promote-superadmin",
     "prisma:seed": "pnpm --filter @almio/api prisma:seed",
     "prisma:validate": "pnpm --filter @almio/api prisma:validate",
     "test": "pnpm -r test",
