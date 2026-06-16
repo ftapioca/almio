@@ -91,9 +91,11 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 
 ## Próximo checkpoint recomendado
 
-1. aplicar `pnpm prisma:migrate:tenants` en ambientes existentes para activar la columna/índice de idempotencia en `attendance`
-2. definir si `GET|PUT /v1/admin/branch-membership-scopes` tendrá backoffice/UI dedicado
-3. iniciar la capa web sólo después de fijar esos contratos
+1. tratar `attendance` y `shifts` como contratos backend fijados y evitar mover eventos, headers o transiciones desde la capa web
+2. continuar la UI funcional usando:
+   - `Idempotency-Key` en `attendance`
+   - comandos explícitos de `shifts` para publicar, cancelar y completar
+3. mantener `branch_membership_scopes` scripts sólo para bootstrap o soporte, porque la operación normal ya tiene contrato admin y backoffice mínimo
 
 ## Nota de consistencia
 

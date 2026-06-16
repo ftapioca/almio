@@ -37,7 +37,7 @@ El MVP está orientado a restaurantes pequeños y locales de comida rápida, con
 
 ## Estado real del repositorio
 
-La repo ya implementa la base de `Fase 2 - Branches y Employees` y arrancó la base de `Fase 3 - Attendance y Shifts`.
+La repo ya cerró backend de `Fase 2 - Branches y Employees` y dejó estabilizado el tramo backend de `Fase 3 - Attendance y Shifts`, con auth web real lista para abrir UI funcional.
 
 Implementado hoy:
 
@@ -92,6 +92,13 @@ Implementado hoy:
 - reglas de negocio iniciales ya activas:
   - `attendance`: secuencia válida `CHECK_IN -> BREAK_START|CHECK_OUT -> BREAK_END -> CHECK_OUT`
   - `shifts`: prevención de traslapes por colaborador y transición de estados básica
+- contrato estabilizado de `attendance`:
+  - `POST /v1/attendance` exige `Idempotency-Key`
+  - replay idempotente devuelve el mismo registro para la misma key/payload
+- contrato estabilizado de `shifts`:
+  - `PATCH /v1/shifts/:id` ya no cambia `status`
+  - las transiciones viven sólo en `publish`, `cancel` y `complete`
+- tenant migrations aplicadas en el entorno actual para activar idempotencia de `attendance`
 
 Pendiente para próximas fases:
 
@@ -102,15 +109,15 @@ Pendiente para próximas fases:
 
 Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
 
-1. endurecer más la validación operativa de `attendance/shifts`:
-   - aplicar tenant migrations en ambientes existentes para `Idempotency-Key` real de `attendance`
-   - evaluar pruebas de integración contra Supabase/PostgreSQL real para contratos críticos
-2. consolidar la operación de `branch_membership_scopes`:
-   - definir si el endpoint admin tendrá backoffice/UI dedicado
-   - mantener los scripts Prisma sólo para bootstrap o soporte
-3. recién después abrir el siguiente bloque funcional:
-   - `attendance/shifts` UI
-   - o `BranchGuard` si aparece una necesidad transversal no resuelta por el patrón actual
+1. abrir UI funcional de `attendance` usando el contrato ya fijado:
+   - respetar `Idempotency-Key`
+   - no reabrir decisiones de secuencia ni estados
+2. seguir con UI funcional de `shifts`:
+   - usar comandos explícitos `publish`, `cancel` y `complete`
+   - mantener fuera de la UI cualquier cambio directo de `status`
+3. después consolidar el shell/backoffice general:
+   - navegación operativa
+   - capas compartidas de auth, tenant y sucursal activa
 
 ## Cierre de Fase 1
 
@@ -147,3 +154,4 @@ docs/
 - Todo endpoint nuevo debe documentarse en `docs/api/` antes de merge.
 - Toda decisión de arquitectura relevante debe registrarse en `docs/adr/`.
 - Todo avance debe respetar el SoW, SDD, SRS, DocAPI y Cronograma como baseline.
+- El cierre de backend de `Fase 3` y el corte previo a UI funcional quedan resumidos en `docs/phase-3-readiness.md`.

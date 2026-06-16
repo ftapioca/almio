@@ -4,7 +4,7 @@ Runbooks operativos requeridos por el `SDD`, `SRS` y `Cronograma`.
 
 ## Estado actual
 
-La repo ya cerró la base de `Fase 2` y está consolidando backend de `Fase 3`, pero estos runbooks todavía siguen pendientes de desarrollo operativo. Esta carpeta existe para reservar la estructura obligatoria antes del bloque de operación, hardening y beta.
+La repo ya cerró la base de `Fase 2`, estabilizó backend de `Fase 3` y habilitó auth web real para backoffice, pero estos runbooks todavía siguen pendientes de desarrollo operativo. Esta carpeta existe para reservar la estructura obligatoria antes del bloque de operación, hardening y beta.
 
 ## Runbooks requeridos
 

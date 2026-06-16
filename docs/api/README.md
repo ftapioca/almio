@@ -557,5 +557,5 @@ Uso:
 
 ## Próximos contratos a cerrar
 
-- aplicar `pnpm prisma:migrate:tenants` en ambientes existentes para activar la migración tenant de idempotencia en `attendance`
-- definir si la administración de `branch_membership_scopes` tendrá backoffice/UI encima del contrato admin actual
+- abrir UI funcional de `attendance` consumiendo el contrato actual sin relajar `Idempotency-Key` ni la secuencia de eventos
+- abrir UI funcional de `shifts` usando sólo comandos explícitos de transición y sin cambios directos de `status`

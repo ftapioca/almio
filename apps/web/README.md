@@ -11,6 +11,7 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 - auth web real con `Supabase Auth` en `/auth/login`
 - protección server-side del backoffice usando sesión Supabase
 - carga automática del `Bearer token` de sesión dentro de la consola de scopes
+- base lista para abrir UI funcional de `attendance` y `shifts` sin rehacer auth ni wiring de sesión
 
 ## Objetivos de las siguientes fases
 
@@ -20,4 +21,4 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 
 ## Nota de consistencia
 
-La app web actual representa solo el arranque del proyecto. No debe presentarse como POS operativo ni como portal funcional completo hasta avanzar sobre las fases del cronograma.
+La app web actual ya tiene auth real y un backoffice mínimo, pero todavía no debe presentarse como módulo operativo de asistencia, turnos o POS hasta que exista esa UI en código.
