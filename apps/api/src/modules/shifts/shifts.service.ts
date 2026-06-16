@@ -203,7 +203,6 @@ export class ShiftsService {
     const nextBranchId = dto.branchId ?? existing.branchId;
     const nextEmployeeId =
       dto.employeeId !== undefined ? dto.employeeId : existing.employeeId;
-    const nextStatus = dto.status ?? existing.status;
 
     this.assertCanAccessBranch(user, nextBranchId);
     this.assertShiftCanBeEdited(existing.status, dto);
@@ -225,8 +224,7 @@ export class ShiftsService {
       );
     }
 
-    this.assertShiftStatusTransitionAllowed(existing.status, dto.status);
-    this.assertShiftAssignmentCompatible(nextEmployeeId, nextStatus);
+    this.assertShiftAssignmentCompatible(nextEmployeeId, existing.status);
 
     const updates: Array<{ column: string; value: unknown }> = [];
     if (dto.branchId !== undefined) {
@@ -240,9 +238,6 @@ export class ShiftsService {
     }
     if (dto.endsAt !== undefined) {
       updates.push({ column: 'ends_at', value: dto.endsAt });
-    }
-    if (dto.status !== undefined) {
-      updates.push({ column: 'status', value: dto.status });
     }
     if (dto.notes !== undefined) {
       updates.push({ column: 'notes', value: dto.notes ? dto.notes.trim() : null });
@@ -265,22 +260,10 @@ export class ShiftsService {
 
     params.push(shiftId);
 
-    const [shift] = await this.tenantDatabase.query<ShiftRecord[]>(
-      tenant.schemaName,
-      `UPDATE __TENANT_SCHEMA__."shifts"
-       SET ${setClauses.join(', ')}, "updated_at" = NOW()
-       WHERE "id" = $${params.length}::uuid AND "deleted_at" IS NULL
-       RETURNING
-         "id",
-         "branch_id" AS "branchId",
-         "employee_id" AS "employeeId",
-         "starts_at" AS "startsAt",
-         "ends_at" AS "endsAt",
-         "status",
-         "notes",
-         "created_at" AS "createdAt",
-         "updated_at" AS "updatedAt"`,
-      ...params,
+    const shift = await this.updateShiftRecord(
+      tenant,
+      setClauses,
+      params,
     );
 
     await this.auditService.logTenant(tenant.schemaName, {
@@ -294,6 +277,18 @@ export class ShiftsService {
     });
 
     return shift;
+  }
+
+  async publishShift(tenant: TenantContext, shiftId: string, user?: AuthUser) {
+    return this.transitionShiftStatus(tenant, shiftId, 'PUBLISHED', user);
+  }
+
+  async cancelShift(tenant: TenantContext, shiftId: string, user?: AuthUser) {
+    return this.transitionShiftStatus(tenant, shiftId, 'CANCELLED', user);
+  }
+
+  async completeShift(tenant: TenantContext, shiftId: string, user?: AuthUser) {
+    return this.transitionShiftStatus(tenant, shiftId, 'COMPLETED', user);
   }
 
   private async findShiftById(tenant: TenantContext, shiftId: string) {
@@ -349,6 +344,41 @@ export class ShiftsService {
     return employee;
   }
 
+  private async transitionShiftStatus(
+    tenant: TenantContext,
+    shiftId: string,
+    nextStatus: 'PUBLISHED' | 'CANCELLED' | 'COMPLETED',
+    user?: AuthUser,
+  ) {
+    const existing = await this.findShiftById(tenant, shiftId);
+    if (!existing) {
+      throw new NotFoundException('Shift not found');
+    }
+
+    this.assertCanAccessBranch(user, existing.branchId);
+    this.assertShiftStatusTransitionAllowed(existing.status, nextStatus);
+    this.assertShiftAssignmentCompatible(existing.employeeId, nextStatus);
+
+    const shift = await this.updateShiftRecord(
+      tenant,
+      ['"status" = $1'],
+      [nextStatus, shiftId],
+    );
+
+    await this.auditService.logTenant(tenant.schemaName, {
+      action: `SHIFT_${nextStatus}`,
+      resource: 'shifts',
+      userAccountId: await this.auditService.resolveUserAccountId(user),
+      details: {
+        shiftId: shift.id,
+        previousStatus: existing.status,
+        nextStatus,
+      },
+    });
+
+    return shift;
+  }
+
   private ensureEmployeeBelongsToBranch(
     employeeBranchId: string | null,
     branchId: string,
@@ -400,6 +430,32 @@ export class ShiftsService {
         `Shift with status ${status} requires an assigned employee`,
       );
     }
+  }
+
+  private async updateShiftRecord(
+    tenant: TenantContext,
+    setClauses: string[],
+    params: unknown[],
+  ) {
+    const [shift] = await this.tenantDatabase.query<ShiftRecord[]>(
+      tenant.schemaName,
+      `UPDATE __TENANT_SCHEMA__."shifts"
+       SET ${setClauses.join(', ')}, "updated_at" = NOW()
+       WHERE "id" = $${params.length}::uuid AND "deleted_at" IS NULL
+       RETURNING
+         "id",
+         "branch_id" AS "branchId",
+         "employee_id" AS "employeeId",
+         "starts_at" AS "startsAt",
+         "ends_at" AS "endsAt",
+         "status",
+         "notes",
+         "created_at" AS "createdAt",
+         "updated_at" AS "updatedAt"`,
+      ...params,
+    );
+
+    return shift;
   }
 
   private assertShiftStatusTransitionAllowed(

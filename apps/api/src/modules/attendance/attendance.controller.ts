@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -65,11 +66,13 @@ export class AttendanceController {
   @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
   async createAttendanceRecord(
     @Body() dto: CreateAttendanceRecordDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Req() request: TenantRequest,
   ) {
     const record = await this.attendanceService.createAttendanceRecord(
       request.tenant,
       dto,
+      idempotencyKey,
       request.user,
     );
 

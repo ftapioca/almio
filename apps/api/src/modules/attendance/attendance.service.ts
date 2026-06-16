@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -23,6 +24,10 @@ type AttendanceRecord = {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type AttendanceRecordWithIdempotency = AttendanceRecord & {
+  idempotencyKey: string | null;
 };
 
 @Injectable()
@@ -135,9 +140,24 @@ export class AttendanceService {
   async createAttendanceRecord(
     tenant: TenantContext,
     dto: CreateAttendanceRecordDto,
+    idempotencyKey: string | undefined,
     user?: AuthUser,
   ) {
     this.assertCanAccessBranch(user, dto.branchId);
+    const normalizedIdempotencyKey = this.normalizeIdempotencyKey(idempotencyKey);
+    const existingByIdempotencyKey = await this.findAttendanceRecordByIdempotencyKey(
+      tenant,
+      normalizedIdempotencyKey,
+    );
+
+    if (existingByIdempotencyKey) {
+      this.assertIdempotentAttendancePayloadMatches(
+        existingByIdempotencyKey,
+        dto,
+      );
+      return this.toAttendanceRecord(existingByIdempotencyKey);
+    }
+
     const employee = await this.ensureEmployeeExists(tenant, dto.employeeId);
     await this.ensureBranchExists(tenant, dto.branchId);
     this.ensureEmployeeBelongsToBranch(employee.branchId, dto.branchId);
@@ -152,8 +172,8 @@ export class AttendanceService {
     const [record] = await this.tenantDatabase.query<AttendanceRecord[]>(
       tenant.schemaName,
       `INSERT INTO __TENANT_SCHEMA__."attendance_records"
-        ("branch_id", "employee_id", "event_type", "event_at", "source", "notes")
-       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)
+        ("branch_id", "employee_id", "event_type", "event_at", "source", "notes", "idempotency_key")
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7::uuid)
        RETURNING
          "id",
          "branch_id" AS "branchId",
@@ -170,6 +190,7 @@ export class AttendanceService {
       dto.eventAt,
       dto.source ?? 'MANUAL',
       dto.notes?.trim() ?? null,
+      normalizedIdempotencyKey,
     );
 
     await this.auditService.logTenant(tenant.schemaName, {
@@ -308,6 +329,31 @@ export class AttendanceService {
        FROM __TENANT_SCHEMA__."attendance_records"
        WHERE "id" = $1::uuid AND "deleted_at" IS NULL`,
       attendanceRecordId,
+    );
+
+    return record ?? null;
+  }
+
+  private async findAttendanceRecordByIdempotencyKey(
+    tenant: TenantContext,
+    idempotencyKey: string,
+  ) {
+    const [record] = await this.tenantDatabase.query<AttendanceRecordWithIdempotency[]>(
+      tenant.schemaName,
+      `SELECT
+         "id",
+         "branch_id" AS "branchId",
+         "employee_id" AS "employeeId",
+         "event_type" AS "eventType",
+         "event_at" AS "eventAt",
+         "source",
+         "notes",
+         "idempotency_key"::text AS "idempotencyKey",
+         "created_at" AS "createdAt",
+         "updated_at" AS "updatedAt"
+       FROM __TENANT_SCHEMA__."attendance_records"
+       WHERE "idempotency_key" = $1::uuid AND "deleted_at" IS NULL`,
+      idempotencyKey,
     );
 
     return record ?? null;
@@ -492,6 +538,54 @@ export class AttendanceService {
     if (!employeeBranchId || employeeBranchId !== branchId) {
       throw new BadRequestException('Employee does not belong to the selected branch');
     }
+  }
+
+  private normalizeIdempotencyKey(idempotencyKey: string | undefined) {
+    const normalizedValue = idempotencyKey?.trim().toLowerCase();
+    if (!normalizedValue) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
+
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalizedValue)) {
+      throw new BadRequestException('Idempotency-Key header must be a valid UUID');
+    }
+
+    return normalizedValue;
+  }
+
+  private assertIdempotentAttendancePayloadMatches(
+    existingRecord: AttendanceRecordWithIdempotency,
+    dto: CreateAttendanceRecordDto,
+  ) {
+    const normalizedSource = dto.source ?? 'MANUAL';
+    const normalizedNotes = dto.notes?.trim() ?? null;
+
+    if (
+      existingRecord.branchId !== dto.branchId ||
+      existingRecord.employeeId !== dto.employeeId ||
+      existingRecord.eventType !== dto.eventType ||
+      existingRecord.eventAt.getTime() !== dto.eventAt.getTime() ||
+      existingRecord.source !== normalizedSource ||
+      existingRecord.notes !== normalizedNotes
+    ) {
+      throw new ConflictException(
+        'Idempotency-Key already exists for a different attendance payload',
+      );
+    }
+  }
+
+  private toAttendanceRecord(record: AttendanceRecordWithIdempotency): AttendanceRecord {
+    return {
+      id: record.id,
+      branchId: record.branchId,
+      employeeId: record.employeeId,
+      eventType: record.eventType,
+      eventAt: record.eventAt,
+      source: record.source,
+      notes: record.notes,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
   }
 
   private getScopedBranchIds(user?: AuthUser): string[] | null {

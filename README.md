@@ -70,6 +70,9 @@ Implementado hoy:
   - `POST /v1/shifts`
   - `GET /v1/shifts/:id`
   - `PATCH /v1/shifts/:id`
+  - `POST /v1/shifts/:id/publish`
+  - `POST /v1/shifts/:id/cancel`
+  - `POST /v1/shifts/:id/complete`
 - scaffold Next.js 15 para portal SaaS / futura PWA
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
@@ -97,16 +100,13 @@ Pendiente para próximas fases:
 
 Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
 
-1. cerrar la decisión de contrato para `shifts`:
-   - confirmar si `PATCH` genérico se mantiene
-   - o dividir transiciones en comandos explícitos `publish|cancel|complete`
-2. endurecer más la validación operativa de `attendance/shifts`:
-   - decidir si `attendance` exigirá `Idempotency-Key` antes del tramo offline-first
+1. endurecer más la validación operativa de `attendance/shifts`:
+   - aplicar tenant migrations en ambientes existentes para `Idempotency-Key` real de `attendance`
    - evaluar pruebas de integración contra Supabase/PostgreSQL real para contratos críticos
-3. consolidar la operación de `branch_membership_scopes`:
+2. consolidar la operación de `branch_membership_scopes`:
    - definir si el endpoint admin tendrá backoffice/UI dedicado
    - mantener los scripts Prisma sólo para bootstrap o soporte
-4. recién después abrir el siguiente bloque funcional:
+3. recién después abrir el siguiente bloque funcional:
    - `attendance/shifts` UI
    - o `BranchGuard` si aparece una necesidad transversal no resuelta por el patrón actual
 

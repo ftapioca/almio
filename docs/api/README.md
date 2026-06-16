@@ -70,6 +70,9 @@ Implementado hoy:
 - `POST /v1/shifts`
 - `GET /v1/shifts/:id`
 - `PATCH /v1/shifts/:id`
+- `POST /v1/shifts/:id/publish`
+- `POST /v1/shifts/:id/cancel`
+- `POST /v1/shifts/:id/complete`
 
 Decisión explícita de autenticación vigente:
 
@@ -374,6 +377,7 @@ Uso:
 - crea una marcación dentro del tenant actual
 - requiere `Authorization`
 - requiere `X-Tenant-ID`
+- requiere `Idempotency-Key: <uuid>`
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, `branchId` debe pertenecer a su scope
@@ -392,6 +396,11 @@ Payload actual:
 ```
 
 La API rechaza hoy, por ejemplo, un segundo `CHECK_IN` consecutivo o un `CHECK_OUT` insertado antes de un `BREAK_START` ya existente.
+
+Regla de idempotencia activa:
+
+- si se reintenta el mismo `POST /v1/attendance` con el mismo `Idempotency-Key` y el mismo payload, la API devuelve la misma marcación
+- si el `Idempotency-Key` ya existe pero con payload distinto, la API responde conflicto
 
 ### `GET /v1/attendance/:id`
 
@@ -492,8 +501,44 @@ Uso:
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, el turno actual y el `branchId` destino deben pertenecer a su scope
-- valida traslapes y transiciones de estado
+- valida traslapes
+- no permite transiciones de estado; `status` ya no forma parte del contrato de `PATCH`
 - un turno `COMPLETED` o `CANCELLED` no puede volver a cambiar sucursal, colaborador ni rango horario
+
+### `POST /v1/shifts/:id/publish`
+
+Uso:
+
+- publica un turno ya creado
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el turno debe pertenecer a una sucursal asignada
+- transición válida: `SCHEDULED -> PUBLISHED`
+- requiere `employeeId` asignado
+
+### `POST /v1/shifts/:id/cancel`
+
+Uso:
+
+- cancela un turno ya creado
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el turno debe pertenecer a una sucursal asignada
+- transiciones válidas: `SCHEDULED -> CANCELLED` o `PUBLISHED -> CANCELLED`
+
+### `POST /v1/shifts/:id/complete`
+
+Uso:
+
+- marca como completado un turno publicado
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
+- si actúa `BRANCH_ADMIN`, el turno debe pertenecer a una sucursal asignada
+- transición válida: `PUBLISHED -> COMPLETED`
+- requiere `employeeId` asignado
 
 ## Notas de autorización vigentes
 
@@ -512,6 +557,5 @@ Uso:
 
 ## Próximos contratos a cerrar
 
-- decidir si `shifts` seguirá con `PATCH` genérico o se dividirá en comandos explícitos `publish`, `cancel` y `complete`
-- decidir si `attendance` requerirá `Idempotency-Key` obligatoria antes de abrir el flujo offline-first
+- aplicar `pnpm prisma:migrate:tenants` en ambientes existentes para activar la migración tenant de idempotencia en `attendance`
 - definir si la administración de `branch_membership_scopes` tendrá backoffice/UI encima del contrato admin actual

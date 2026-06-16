@@ -29,6 +29,9 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - `POST /v1/shifts`
 - `GET /v1/shifts/:id`
 - `PATCH /v1/shifts/:id`
+- `POST /v1/shifts/:id/publish`
+- `POST /v1/shifts/:id/cancel`
+- `POST /v1/shifts/:id/complete`
 - `TenantResolverMiddleware` real por `Company`
 - `AuthGuard` real con JWT de Supabase
 - `RolesGuard`
@@ -88,10 +91,9 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 
 ## Próximo checkpoint recomendado
 
-1. definir si las transiciones de `shifts` seguirán en `PATCH` genérico o pasarán a comandos explícitos `publish|cancel|complete`
-2. decidir si `attendance` requerirá `Idempotency-Key` antes del tramo offline-first
-3. definir si `GET|PUT /v1/admin/branch-membership-scopes` tendrá backoffice/UI dedicado
-4. iniciar la capa web sólo después de fijar esos contratos
+1. aplicar `pnpm prisma:migrate:tenants` en ambientes existentes para activar la columna/índice de idempotencia en `attendance`
+2. definir si `GET|PUT /v1/admin/branch-membership-scopes` tendrá backoffice/UI dedicado
+3. iniciar la capa web sólo después de fijar esos contratos
 
 ## Nota de consistencia
 

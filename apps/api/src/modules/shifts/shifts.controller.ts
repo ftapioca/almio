@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -83,6 +84,42 @@ export class ShiftsController {
       dto,
       request.user,
     );
+
+    return {
+      success: true,
+      data: shift,
+    };
+  }
+
+  @Post(':id/publish')
+  @HttpCode(200)
+  @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
+  async publishShift(@Param('id') id: string, @Req() request: TenantRequest) {
+    const shift = await this.shiftsService.publishShift(request.tenant, id, request.user);
+
+    return {
+      success: true,
+      data: shift,
+    };
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(200)
+  @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
+  async cancelShift(@Param('id') id: string, @Req() request: TenantRequest) {
+    const shift = await this.shiftsService.cancelShift(request.tenant, id, request.user);
+
+    return {
+      success: true,
+      data: shift,
+    };
+  }
+
+  @Post(':id/complete')
+  @HttpCode(200)
+  @Roles(Role.SUPERADMIN, Role.OWNER, Role.BRANCH_ADMIN)
+  async completeShift(@Param('id') id: string, @Req() request: TenantRequest) {
+    const shift = await this.shiftsService.completeShift(request.tenant, id, request.user);
 
     return {
       success: true,

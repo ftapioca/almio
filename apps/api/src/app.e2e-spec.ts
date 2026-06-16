@@ -41,6 +41,7 @@ type AttendanceRecord = {
   eventAt: Date;
   source: string;
   notes: string | null;
+  idempotencyKey?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -142,6 +143,7 @@ const tenantFixtures: Record<
         eventAt: new Date('2026-06-15T12:00:00.000Z'),
         source: 'MANUAL',
         notes: null,
+        idempotencyKey: null,
         createdAt: new Date('2026-06-15T12:00:00.000Z'),
         updatedAt: new Date('2026-06-15T12:00:00.000Z'),
       },
@@ -153,6 +155,7 @@ const tenantFixtures: Record<
         eventAt: new Date('2026-06-15T13:00:00.000Z'),
         source: 'MANUAL',
         notes: null,
+        idempotencyKey: null,
         createdAt: new Date('2026-06-15T13:00:00.000Z'),
         updatedAt: new Date('2026-06-15T13:00:00.000Z'),
       },
@@ -504,8 +507,65 @@ function buildTenantDatabaseMock() {
           ];
         }
 
+        if (sql.includes('"idempotency_key" = $1::uuid')) {
+          return tenant.attendanceRecords.filter(
+            (record) => record.idempotencyKey === params[0],
+          );
+        }
+
         if (params.length === 1 && isUuid(params[0])) {
           return tenant.attendanceRecords.filter((record) => record.id === params[0]);
+        }
+
+        if (sql.includes('INSERT INTO __TENANT_SCHEMA__."attendance_records"')) {
+          const newRecord: AttendanceRecord = {
+            id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc9',
+            branchId: params[0] as string,
+            employeeId: params[1] as string,
+            eventType: params[2] as string,
+            eventAt: params[3] as Date,
+            source: params[4] as string,
+            notes: (params[5] as string | null) ?? null,
+            idempotencyKey: (params[6] as string | null) ?? null,
+            createdAt: new Date('2026-06-16T18:00:00.000Z'),
+            updatedAt: new Date('2026-06-16T18:00:00.000Z'),
+          };
+          tenant.attendanceRecords.push(newRecord);
+          return [newRecord];
+        }
+
+        if (sql.includes('ORDER BY "event_at" DESC')) {
+          const employeeId = params[0] as string;
+          const branchId = params[1] as string;
+          const eventAt = params[2] as Date;
+
+          const records = tenant.attendanceRecords
+            .filter(
+              (record) =>
+                record.employeeId === employeeId &&
+                record.branchId === branchId &&
+                record.eventAt <= eventAt,
+            )
+            .sort((left, right) => right.eventAt.getTime() - left.eventAt.getTime());
+
+          return records.slice(0, 1);
+        }
+
+        if (sql.includes('ORDER BY "event_at" ASC')) {
+          const employeeId = params[0] as string;
+          const branchId = params[1] as string;
+          const eventAt = params[2] as Date;
+
+          const records = tenant.attendanceRecords
+            .filter(
+              (record) =>
+                record.employeeId === employeeId &&
+                record.branchId === branchId &&
+                record.eventAt >= eventAt,
+            )
+            .sort((left, right) => left.eventAt.getTime() - right.eventAt.getTime());
+
+          return records.slice(0, 1);
         }
 
         return paginate(filterAttendanceRecords(tenant.attendanceRecords, params), params);
@@ -518,6 +578,20 @@ function buildTenantDatabaseMock() {
 
         if (params.length === 1 && isUuid(params[0])) {
           return tenant.shifts.filter((shift) => shift.id === params[0]);
+        }
+
+        if (sql.includes('UPDATE __TENANT_SCHEMA__."shifts"')) {
+          const shiftId = params.at(-1);
+          const shift = tenant.shifts.find((item) => item.id === shiftId);
+          if (!shift) {
+            return [];
+          }
+
+          if (sql.includes('"status" = $1')) {
+            shift.status = params[0] as string;
+            shift.updatedAt = new Date('2026-06-16T16:00:00.000Z');
+            return [shift];
+          }
         }
 
         return paginate(filterShifts(tenant.shifts, params), params);
@@ -836,6 +910,47 @@ describe('Authorization e2e', () => {
     expect(response.body.data[0].id).toBe(ATTENDANCE_A1);
   });
 
+  it('requires Idempotency-Key when creating attendance', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/attendance')
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .send({
+        branchId: BRANCH_A1,
+        employeeId: EMPLOYEE_A1,
+        eventType: 'BREAK_START',
+        eventAt: '2026-06-15T12:30:00.000Z',
+      })
+      .expect(400);
+  });
+
+  it('replays the same attendance create when Idempotency-Key is reused', async () => {
+    const payload = {
+      branchId: BRANCH_A1,
+      employeeId: EMPLOYEE_A1,
+      eventType: 'BREAK_START',
+      eventAt: '2026-06-15T12:30:00.000Z',
+    };
+
+    const firstResponse = await request(app.getHttpServer())
+      .post('/v1/attendance')
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .set('Idempotency-Key', '99999999-9999-4999-8999-999999999999')
+      .send(payload)
+      .expect(201);
+
+    const secondResponse = await request(app.getHttpServer())
+      .post('/v1/attendance')
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .set('Idempotency-Key', '99999999-9999-4999-8999-999999999999')
+      .send(payload)
+      .expect(201);
+
+    expect(secondResponse.body.data.id).toBe(firstResponse.body.data.id);
+  });
+
   it('returns 403 when a branch admin filters attendance by a foreign branch', async () => {
     await request(app.getHttpServer())
       .get(`/v1/attendance?branchId=${BRANCH_A2}`)
@@ -849,6 +964,7 @@ describe('Authorization e2e', () => {
       .post('/v1/attendance')
       .set('Authorization', 'Bearer branch-admin-acme-a1')
       .set('X-Tenant-ID', 'acme')
+      .set('Idempotency-Key', '88888888-8888-4888-8888-888888888888')
       .send({
         branchId: BRANCH_A2,
         employeeId: EMPLOYEE_A2,
@@ -866,12 +982,34 @@ describe('Authorization e2e', () => {
       .expect(403);
   });
 
+  it('publishes a shift through an explicit command endpoint', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/v1/shifts/${SHIFT_A1}/publish`)
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .expect(200);
+
+    expect(response.body.data.id).toBe(SHIFT_A1);
+    expect(response.body.data.status).toBe('PUBLISHED');
+  });
+
   it('returns 403 when a branch admin filters shifts by a foreign branch', async () => {
     await request(app.getHttpServer())
       .get(`/v1/shifts?branchId=${BRANCH_A2}`)
       .set('Authorization', 'Bearer branch-admin-acme-a1')
       .set('X-Tenant-ID', 'acme')
       .expect(403);
+  });
+
+  it('rejects status updates through generic shift patch', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/shifts/${SHIFT_A1}`)
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .send({
+        status: 'COMPLETED',
+      })
+      .expect(400);
   });
 
   it('returns 403 when a branch admin creates a shift in a foreign branch', async () => {

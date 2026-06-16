@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsDate, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateShiftDto {
   @IsOptional()
@@ -19,10 +19,6 @@ export class UpdateShiftDto {
   @Type(() => Date)
   @IsDate()
   endsAt?: Date;
-
-  @IsOptional()
-  @IsIn(['SCHEDULED', 'PUBLISHED', 'CANCELLED', 'COMPLETED'])
-  status?: 'SCHEDULED' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
 
   @IsOptional()
   @IsString()
