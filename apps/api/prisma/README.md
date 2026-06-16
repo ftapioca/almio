@@ -155,7 +155,7 @@ Esto ya fue ejecutado sobre `almio` con `branch-admin@almio.cl`.
 ## Nota para la siguiente sesión
 
 - `prisma migrate deploy` ya está estabilizado usando el pooler `session mode` en `DIRECT_URL`
-- el siguiente trabajo de datos no es otra migración pública grande, sino administración operativa de `branch_membership_scopes`
+- la asignación inicial de scopes puede seguir haciéndose por script, pero la operación normal ya puede moverse a `GET|PUT /v1/admin/branch-membership-scopes`
 - si se rota `SUPABASE_SERVICE_ROLE_KEY`, hay que actualizar el `.env` antes de volver a usar los scripts de provisión o prueba real
 
 ## Promoción temporal a SUPERADMIN

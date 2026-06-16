@@ -367,6 +367,33 @@ export class AttendanceService {
         `Invalid attendance sequence. Expected one of: ${nextAllowedEvents.join(', ')}`,
       );
     }
+
+    if (previousRecord && previousRecord.eventAt >= nextEventAt) {
+      throw new BadRequestException('Attendance eventAt must be greater than the previous event');
+    }
+
+    const nextRecord = await this.findNextAttendanceRecord(
+      tenant,
+      employeeId,
+      branchId,
+      nextEventAt,
+      excludeAttendanceRecordId,
+    );
+
+    if (!nextRecord) {
+      return;
+    }
+
+    if (nextRecord.eventAt <= nextEventAt) {
+      throw new BadRequestException('Attendance eventAt must be lower than the next event');
+    }
+
+    const allowedEventsAfterCandidate = this.getNextAllowedAttendanceEvents(nextEventType);
+    if (!allowedEventsAfterCandidate.includes(nextRecord.eventType)) {
+      throw new BadRequestException(
+        `Invalid attendance sequence after ${nextEventType}. Expected next event to be one of: ${allowedEventsAfterCandidate.join(', ')}`,
+      );
+    }
   }
 
   private getNextAllowedAttendanceEvents(previousEventType?: string) {
@@ -415,6 +442,42 @@ export class AttendanceService {
        FROM __TENANT_SCHEMA__."attendance_records"
        WHERE ${filters.join(' AND ')}
        ORDER BY "event_at" DESC, "created_at" DESC
+       LIMIT 1`,
+      ...params,
+    );
+
+    return record ?? null;
+  }
+
+  private async findNextAttendanceRecord(
+    tenant: TenantContext,
+    employeeId: string,
+    branchId: string,
+    eventAt: Date,
+    excludeAttendanceRecordId?: string,
+  ) {
+    const params: unknown[] = [employeeId, branchId, eventAt];
+    const filters = [
+      '"employee_id" = $1::uuid',
+      '"branch_id" = $2::uuid',
+      '"event_at" >= $3',
+      '"deleted_at" IS NULL',
+    ];
+
+    if (excludeAttendanceRecordId) {
+      params.push(excludeAttendanceRecordId);
+      filters.push(`"id" <> $${params.length}::uuid`);
+    }
+
+    const [record] = await this.tenantDatabase.query<Array<{ id: string; eventType: string; eventAt: Date }>>(
+      tenant.schemaName,
+      `SELECT
+         "id",
+         "event_type" AS "eventType",
+         "event_at" AS "eventAt"
+       FROM __TENANT_SCHEMA__."attendance_records"
+       WHERE ${filters.join(' AND ')}
+       ORDER BY "event_at" ASC, "created_at" ASC
        LIMIT 1`,
       ...params,
     );

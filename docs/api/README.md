@@ -52,6 +52,8 @@ Implementado hoy:
 - `GET /v1/admin/companies/:slug`
 - `POST /v1/admin/companies`
 - `GET /v1/admin/plans`
+- `GET /v1/admin/branch-membership-scopes`
+- `PUT /v1/admin/branch-membership-scopes/:membershipId`
 - `GET /v1/branches`
 - `POST /v1/branches`
 - `GET /v1/branches/:id`
@@ -184,6 +186,42 @@ Query params:
 
 - `page` default `1`
 - `limit` default `20`, max `100`
+
+### `GET /v1/admin/branch-membership-scopes`
+
+Uso:
+
+- obtiene los scopes actuales de sucursal para un `company_membership` del tenant actual
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER`
+- el `membershipId` debe pertenecer al tenant actual y tener rol `BRANCH_ADMIN`
+
+Query params:
+
+- `membershipId` requerido
+
+### `PUT /v1/admin/branch-membership-scopes/:membershipId`
+
+Uso:
+
+- reemplaza completamente los scopes de sucursal para un `company_membership`
+- cubre alta, revocación y reemplazo en una sola operación
+- requiere `Authorization`
+- requiere `X-Tenant-ID`
+- requiere rol `SUPERADMIN | OWNER`
+- valida que todas las sucursales existan en el tenant actual
+
+Payload actual:
+
+```json
+{
+  "branchIds": [
+    "uuid-branch-1",
+    "uuid-branch-2"
+  ]
+}
+```
 
 ### `GET /v1/branches`
 
@@ -327,6 +365,7 @@ Query params:
 Regla de negocio ya activa:
 
 - no se permiten secuencias inválidas de eventos por colaborador
+- al insertar o editar un evento también se valida que no rompa la transición con el evento siguiente
 
 ### `POST /v1/attendance`
 
@@ -352,7 +391,7 @@ Payload actual:
 }
 ```
 
-La API rechaza hoy, por ejemplo, un segundo `CHECK_IN` consecutivo para el mismo colaborador.
+La API rechaza hoy, por ejemplo, un segundo `CHECK_IN` consecutivo o un `CHECK_OUT` insertado antes de un `BREAK_START` ya existente.
 
 ### `GET /v1/attendance/:id`
 
@@ -374,7 +413,7 @@ Uso:
 - requiere rol `SUPERADMIN | OWNER | BRANCH_ADMIN`
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, el registro actual y el `branchId` destino deben pertenecer a su scope
-- si cambia `eventType`, vuelve a validar la secuencia permitida
+- si cambia `eventType` o `eventAt`, vuelve a validar la secuencia permitida contra el evento anterior y el siguiente
 
 ### `GET /v1/shifts`
 
@@ -428,6 +467,11 @@ Payload actual:
 }
 ```
 
+Restricciones activas del contrato:
+
+- `POST /v1/shifts` sólo acepta estado inicial `SCHEDULED | PUBLISHED`
+- `PUBLISHED` y `COMPLETED` requieren `employeeId`
+
 ### `GET /v1/shifts/:id`
 
 Uso:
@@ -449,6 +493,7 @@ Uso:
 - deja traza en `audit_log_tenant`
 - si actúa `BRANCH_ADMIN`, el turno actual y el `branchId` destino deben pertenecer a su scope
 - valida traslapes y transiciones de estado
+- un turno `COMPLETED` o `CANCELLED` no puede volver a cambiar sucursal, colaborador ni rango horario
 
 ## Notas de autorización vigentes
 
@@ -468,5 +513,5 @@ Uso:
 ## Próximos contratos a cerrar
 
 - decidir si `shifts` seguirá con `PATCH` genérico o se dividirá en comandos explícitos `publish`, `cancel` y `complete`
-- definir contrato administrativo para alta, reemplazo y revocación de `branch_membership_scopes`
 - decidir si `attendance` requerirá `Idempotency-Key` obligatoria antes de abrir el flujo offline-first
+- definir si la administración de `branch_membership_scopes` tendrá backoffice/UI encima del contrato admin actual

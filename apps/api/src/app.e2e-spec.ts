@@ -67,6 +67,9 @@ const ATTENDANCE_A1 = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1';
 const ATTENDANCE_A2 = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2';
 const SHIFT_A1 = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
 const SHIFT_A2 = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd2';
+const MEMBERSHIP_OWNER_ACME = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1';
+const MEMBERSHIP_BRANCH_ADMIN_ACME = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2';
+const MEMBERSHIP_OWNER_BETA = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3';
 
 const tenantFixtures: Record<
   string,
@@ -220,7 +223,7 @@ const usersByToken: Record<string, AuthUser> = {
     email: 'owner@acme.test',
     roles: [Role.OWNER],
     tenantId: tenantFixtures.acme.companyId,
-    membershipId: 'membership-owner-acme',
+    membershipId: MEMBERSHIP_OWNER_ACME,
     branchScopeIds: [],
     claims: {},
   },
@@ -230,7 +233,7 @@ const usersByToken: Record<string, AuthUser> = {
     email: 'manager@acme.test',
     roles: [Role.BRANCH_ADMIN],
     tenantId: tenantFixtures.acme.companyId,
-    membershipId: 'membership-branch-admin-acme',
+    membershipId: MEMBERSHIP_BRANCH_ADMIN_ACME,
     branchScopeIds: [BRANCH_A1],
     claims: {},
   },
@@ -240,7 +243,7 @@ const usersByToken: Record<string, AuthUser> = {
     email: 'owner@beta.test',
     roles: [Role.OWNER],
     tenantId: tenantFixtures.beta.companyId,
-    membershipId: 'membership-owner-beta',
+    membershipId: MEMBERSHIP_OWNER_BETA,
     branchScopeIds: [],
     claims: {},
   },
@@ -254,6 +257,23 @@ const usersByToken: Record<string, AuthUser> = {
     branchScopeIds: [],
     claims: {},
   },
+};
+
+type CompanyMembershipFixture = {
+  id: string;
+  companyId: string;
+  userAccountId: string;
+  role: string;
+  status: string;
+  deletedAt: Date | null;
+};
+
+type BranchMembershipScopeFixture = {
+  id: string;
+  companyId: string;
+  membershipId: string;
+  branchId: string;
+  deletedAt: Date | null;
 };
 
 function isUuid(value: unknown): value is string {
@@ -273,6 +293,177 @@ function resolveTenantData(schemaName: string) {
   }
 
   return tenant;
+}
+
+function buildMembershipFixtures(): CompanyMembershipFixture[] {
+  return [
+    {
+      id: MEMBERSHIP_OWNER_ACME,
+      companyId: tenantFixtures.acme.companyId,
+      userAccountId: 'user-owner-acme',
+      role: Role.OWNER,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+    {
+      id: MEMBERSHIP_BRANCH_ADMIN_ACME,
+      companyId: tenantFixtures.acme.companyId,
+      userAccountId: 'user-branch-admin-acme',
+      role: Role.BRANCH_ADMIN,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+    {
+      id: MEMBERSHIP_OWNER_BETA,
+      companyId: tenantFixtures.beta.companyId,
+      userAccountId: 'user-owner-beta',
+      role: Role.OWNER,
+      status: 'ACTIVE',
+      deletedAt: null,
+    },
+  ];
+}
+
+function buildBranchScopeFixtures(): BranchMembershipScopeFixture[] {
+  return [
+    {
+      id: 'scope-acme-a1',
+      companyId: tenantFixtures.acme.companyId,
+      membershipId: MEMBERSHIP_BRANCH_ADMIN_ACME,
+      branchId: BRANCH_A1,
+      deletedAt: null,
+    },
+  ];
+}
+
+function buildPrismaMock() {
+  const memberships = buildMembershipFixtures();
+  const branchScopes = buildBranchScopeFixtures();
+
+  return {
+    companyMembership: {
+      findFirst: jest.fn(async ({ where }: { where: Record<string, unknown> }) => {
+        const membership = memberships.find(
+          (item) =>
+            item.id === where.id &&
+            item.companyId === where.companyId &&
+            item.status === where.status &&
+            item.deletedAt === where.deletedAt,
+        );
+
+        if (!membership) {
+          return null;
+        }
+
+        return {
+          id: membership.id,
+          userAccountId: membership.userAccountId,
+          role: membership.role,
+          branchScopes: branchScopes
+            .filter(
+              (scope) =>
+                scope.membershipId === membership.id &&
+                scope.companyId === membership.companyId &&
+                scope.deletedAt === null,
+            )
+            .map((scope) => ({
+              branchId: scope.branchId,
+            })),
+        };
+      }),
+    },
+    branchMembershipScope: {
+      findMany: jest.fn(async ({ where }: { where: Record<string, unknown> }) =>
+        branchScopes
+          .filter(
+            (scope) =>
+              scope.companyId === where.companyId && scope.membershipId === where.membershipId,
+          )
+          .map((scope) => ({
+            id: scope.id,
+            branchId: scope.branchId,
+            deletedAt: scope.deletedAt,
+          })),
+      ),
+    },
+    userAccount: {
+      findFirst: jest.fn(async ({ where }: { where: { OR?: Array<Record<string, string>> } }) => {
+        const candidates = where.OR ?? [];
+        const matchedUser = Object.values(usersByToken).find((user) =>
+          candidates.some(
+            (candidate) =>
+              (candidate.supabaseUserId && candidate.supabaseUserId === user.supabaseUserId) ||
+              (candidate.email && candidate.email === user.email),
+          ),
+        );
+
+        return matchedUser ? { id: matchedUser.id } : null;
+      }),
+    },
+    $transaction: jest.fn(async (callback: (tx: Record<string, unknown>) => Promise<unknown>) =>
+      callback({
+        branchMembershipScope: {
+          updateMany: jest.fn(
+            async ({
+              where,
+              data,
+            }: {
+              where: { id: { in: string[] } };
+              data: { deletedAt: Date | null };
+            }) => {
+              for (const scope of branchScopes) {
+                if (where.id.in.includes(scope.id)) {
+                  scope.deletedAt = data.deletedAt;
+                }
+              }
+
+              return { count: where.id.in.length };
+            },
+          ),
+          upsert: jest.fn(
+            async ({
+              where,
+              update,
+              create,
+            }: {
+              where: {
+                companyId_membershipId_branchId: {
+                  companyId: string;
+                  membershipId: string;
+                  branchId: string;
+                };
+              };
+              update: { deletedAt: Date | null };
+              create: { companyId: string; membershipId: string; branchId: string };
+            }) => {
+              const target = where.companyId_membershipId_branchId;
+              const existing = branchScopes.find(
+                (scope) =>
+                  scope.companyId === target.companyId &&
+                  scope.membershipId === target.membershipId &&
+                  scope.branchId === target.branchId,
+              );
+
+              if (existing) {
+                existing.deletedAt = update.deletedAt;
+                return existing;
+              }
+
+              const createdScope: BranchMembershipScopeFixture = {
+                id: `scope-${branchScopes.length + 1}`,
+                companyId: create.companyId,
+                membershipId: create.membershipId,
+                branchId: create.branchId,
+                deletedAt: null,
+              };
+              branchScopes.push(createdScope);
+              return createdScope;
+            },
+          ),
+        },
+      }),
+    ),
+  };
 }
 
 function buildTenantDatabaseMock() {
@@ -462,7 +653,7 @@ describe('Authorization e2e', () => {
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({})
+      .useValue(buildPrismaMock())
       .overrideProvider(TenantService)
       .useValue({
         findActiveCompanyBySlug: jest.fn(async (slug: string) => {
@@ -494,6 +685,7 @@ describe('Authorization e2e', () => {
       .useValue(buildTenantDatabaseMock())
       .overrideProvider(AuditService)
       .useValue({
+        log: jest.fn(),
         logTenant: jest.fn(),
         resolveUserAccountId: jest.fn(async (user?: AuthUser) => user?.id ?? null),
       })
@@ -593,6 +785,46 @@ describe('Authorization e2e', () => {
     ]);
   });
 
+  it('returns the current branch scopes for a branch admin membership', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/v1/admin/branch-membership-scopes?membershipId=${MEMBERSHIP_BRANCH_ADMIN_ACME}`)
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .expect(200);
+
+    expect(response.body.data.membershipId).toBe(MEMBERSHIP_BRANCH_ADMIN_ACME);
+    expect(response.body.data.role).toBe(Role.BRANCH_ADMIN);
+    expect(response.body.data.branchIds).toEqual([BRANCH_A1]);
+    expect(response.body.data.branches.map((branch: BranchRecord) => branch.id)).toEqual([
+      BRANCH_A1,
+    ]);
+  });
+
+  it('replaces the branch scopes for a branch admin membership', async () => {
+    const response = await request(app.getHttpServer())
+      .put(`/v1/admin/branch-membership-scopes/${MEMBERSHIP_BRANCH_ADMIN_ACME}`)
+      .set('Authorization', 'Bearer owner-acme')
+      .set('X-Tenant-ID', 'acme')
+      .send({
+        branchIds: [BRANCH_A2],
+      })
+      .expect(200);
+
+    expect(response.body.data.membershipId).toBe(MEMBERSHIP_BRANCH_ADMIN_ACME);
+    expect(response.body.data.branchIds).toEqual([BRANCH_A2]);
+    expect(response.body.data.branches.map((branch: BranchRecord) => branch.id)).toEqual([
+      BRANCH_A2,
+    ]);
+  });
+
+  it('returns 403 when a branch admin tries to manage branch membership scopes', async () => {
+    await request(app.getHttpServer())
+      .get(`/v1/admin/branch-membership-scopes?membershipId=${MEMBERSHIP_BRANCH_ADMIN_ACME}`)
+      .set('Authorization', 'Bearer branch-admin-acme-a1')
+      .set('X-Tenant-ID', 'acme')
+      .expect(403);
+  });
+
   it('limits branch admins to their assigned branches when listing attendance records', async () => {
     const response = await request(app.getHttpServer())
       .get('/v1/attendance')
@@ -604,11 +836,55 @@ describe('Authorization e2e', () => {
     expect(response.body.data[0].id).toBe(ATTENDANCE_A1);
   });
 
+  it('returns 403 when a branch admin filters attendance by a foreign branch', async () => {
+    await request(app.getHttpServer())
+      .get(`/v1/attendance?branchId=${BRANCH_A2}`)
+      .set('Authorization', 'Bearer branch-admin-acme-a1')
+      .set('X-Tenant-ID', 'acme')
+      .expect(403);
+  });
+
+  it('returns 403 when a branch admin creates attendance in a foreign branch', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/attendance')
+      .set('Authorization', 'Bearer branch-admin-acme-a1')
+      .set('X-Tenant-ID', 'acme')
+      .send({
+        branchId: BRANCH_A2,
+        employeeId: EMPLOYEE_A2,
+        eventType: 'CHECK_IN',
+        eventAt: '2026-06-16T08:00:00.000Z',
+      })
+      .expect(403);
+  });
+
   it('returns 403 when a branch admin requests a shift outside its scope', async () => {
     await request(app.getHttpServer())
       .get(`/v1/shifts/${SHIFT_A2}`)
       .set('Authorization', 'Bearer branch-admin-acme-a1')
       .set('X-Tenant-ID', 'acme')
+      .expect(403);
+  });
+
+  it('returns 403 when a branch admin filters shifts by a foreign branch', async () => {
+    await request(app.getHttpServer())
+      .get(`/v1/shifts?branchId=${BRANCH_A2}`)
+      .set('Authorization', 'Bearer branch-admin-acme-a1')
+      .set('X-Tenant-ID', 'acme')
+      .expect(403);
+  });
+
+  it('returns 403 when a branch admin creates a shift in a foreign branch', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/shifts')
+      .set('Authorization', 'Bearer branch-admin-acme-a1')
+      .set('X-Tenant-ID', 'acme')
+      .send({
+        branchId: BRANCH_A2,
+        employeeId: EMPLOYEE_A2,
+        startsAt: '2026-06-18T12:00:00.000Z',
+        endsAt: '2026-06-18T20:00:00.000Z',
+      })
       .expect(403);
   });
 });

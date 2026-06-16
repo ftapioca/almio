@@ -67,4 +67,33 @@ describe('ShiftsService', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('rejects creating a shift directly in a terminal status', async () => {
+    const authorizationService = {
+      isBranchAdmin: jest.fn().mockReturnValue(false),
+      isSuperadmin: jest.fn().mockReturnValue(false),
+      isOwner: jest.fn().mockReturnValue(false),
+    };
+    const tenantDatabase = {
+      query: jest.fn(),
+    };
+    const auditService = {};
+    const service = new ShiftsService(
+      authorizationService as never,
+      tenantDatabase as never,
+      auditService as never,
+    );
+
+    await expect(
+      service.createShift(
+        { id: 'company-1', slug: 'almio', schemaName: 'tenant_almio' },
+        {
+          branchId: 'branch-1',
+          startsAt: new Date('2026-06-16T12:00:00.000Z'),
+          endsAt: new Date('2026-06-16T20:00:00.000Z'),
+          status: 'COMPLETED' as never,
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

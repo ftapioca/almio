@@ -30,4 +30,4 @@ La documentación debería asumir mañana este orden:
 
 1. tratar `branches/employees` como backend estabilizado
 2. concentrar cambios nuevos en contratos y reglas de `attendance/shifts`
-3. documentar administración de `branch_membership_scopes` apenas exista endpoint o backoffice
+3. consolidar y extender la documentación de `branch_membership_scopes` sobre el endpoint admin ya expuesto

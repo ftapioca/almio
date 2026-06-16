@@ -70,7 +70,8 @@ Checklist de cierre para `branches` y `employees`, derivado de `SoW`, `SDD`, `SR
 ## Estado posterior
 
 - `attendance` y `shifts` ya arrancaron reutilizando el mismo scope por sucursal
-- el flujo operativo actual para scopes es script-based vía `pnpm prisma:assign-branch-scopes`
+- el alta inicial de scopes sigue disponible por `pnpm prisma:assign-branch-scopes`
+- la operación normal ya puede usar `GET|PUT /v1/admin/branch-membership-scopes`
 - existe validación real de login y consumo con `branch-admin@almio.cl` sobre `almio`
 - ya se validaron por HTTP real:
   - lectura positiva dentro de scope en `branches`, `employees`, `attendance` y `shifts`
@@ -83,4 +84,4 @@ Fase 2 puede tratarse como cerrada a nivel backend. El foco de continuación deb
 
 1. mover el seguimiento operativo a `attendance/shifts` como frente principal de Fase 3
 2. agregar pruebas e2e negativas específicas de scope sobre esos módulos
-3. resolver cómo se administrarán scopes sin depender sólo de scripts de Prisma
+3. decidir si habrá backoffice/UI para scopes sobre el contrato admin ya expuesto

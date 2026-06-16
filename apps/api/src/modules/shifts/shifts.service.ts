@@ -135,6 +135,7 @@ export class ShiftsService {
   ) {
     this.assertCanAccessBranch(user, dto.branchId);
     this.ensureValidShiftRange(dto.startsAt, dto.endsAt);
+    this.assertValidInitialShiftStatus(dto.status);
     await this.ensureBranchExists(tenant, dto.branchId);
 
     if (dto.employeeId) {
@@ -147,6 +148,8 @@ export class ShiftsService {
         dto.endsAt,
       );
     }
+
+    this.assertShiftAssignmentCompatible(dto.employeeId, dto.status ?? 'SCHEDULED');
 
     const [shift] = await this.tenantDatabase.query<ShiftRecord[]>(
       tenant.schemaName,
@@ -200,8 +203,10 @@ export class ShiftsService {
     const nextBranchId = dto.branchId ?? existing.branchId;
     const nextEmployeeId =
       dto.employeeId !== undefined ? dto.employeeId : existing.employeeId;
+    const nextStatus = dto.status ?? existing.status;
 
     this.assertCanAccessBranch(user, nextBranchId);
+    this.assertShiftCanBeEdited(existing.status, dto);
     this.ensureValidShiftRange(dto.startsAt ?? existing.startsAt, dto.endsAt ?? existing.endsAt);
 
     if (dto.branchId) {
@@ -221,6 +226,7 @@ export class ShiftsService {
     }
 
     this.assertShiftStatusTransitionAllowed(existing.status, dto.status);
+    this.assertShiftAssignmentCompatible(nextEmployeeId, nextStatus);
 
     const updates: Array<{ column: string; value: unknown }> = [];
     if (dto.branchId !== undefined) {
@@ -355,6 +361,44 @@ export class ShiftsService {
   private ensureValidShiftRange(startsAt: Date, endsAt: Date) {
     if (startsAt >= endsAt) {
       throw new BadRequestException('Shift endsAt must be greater than startsAt');
+    }
+  }
+
+  private assertValidInitialShiftStatus(status?: string) {
+    if (!status || status === 'SCHEDULED' || status === 'PUBLISHED') {
+      return;
+    }
+
+    throw new BadRequestException(
+      'Shift can only be created with status SCHEDULED or PUBLISHED',
+    );
+  }
+
+  private assertShiftCanBeEdited(currentStatus: string, dto: UpdateShiftDto) {
+    const hasStructuralChanges =
+      dto.branchId !== undefined ||
+      dto.employeeId !== undefined ||
+      dto.startsAt !== undefined ||
+      dto.endsAt !== undefined;
+
+    if (
+      hasStructuralChanges &&
+      (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED')
+    ) {
+      throw new BadRequestException(
+        `Shift in status ${currentStatus} cannot modify branch, employee or schedule`,
+      );
+    }
+  }
+
+  private assertShiftAssignmentCompatible(
+    employeeId: string | null | undefined,
+    status: string,
+  ) {
+    if ((status === 'PUBLISHED' || status === 'COMPLETED') && !employeeId) {
+      throw new BadRequestException(
+        `Shift with status ${status} requires an assigned employee`,
+      );
     }
   }
 

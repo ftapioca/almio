@@ -3,9 +3,13 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
+import { Role } from '../../common/auth/role.enum';
 import { AuthUser } from '../../common/auth/auth-user.type';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TenantContext } from '../../common/tenant/tenant-context.type';
+import { TenantDatabaseService } from '../../common/tenant/tenant-database.service';
 import { TenantProvisioningService } from '../../common/tenant/tenant-provisioning.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -16,6 +20,7 @@ import { ListPlansQueryDto } from './dto/list-plans.query';
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly tenantDatabase: TenantDatabaseService,
     private readonly tenantProvisioningService: TenantProvisioningService,
     private readonly auditService: AuditService,
   ) {}
@@ -331,8 +336,182 @@ export class AdminService {
     return response;
   }
 
+  async getBranchMembershipScopes(
+    tenant: TenantContext,
+    membershipId: string,
+    user?: AuthUser,
+  ) {
+    const membership = await this.findBranchAdminMembership(tenant.id, membershipId);
+    const branches = await this.listBranchesForScopeIds(
+      tenant,
+      membership.branchScopes.map((scope) => scope.branchId),
+    );
+
+    await this.auditService.log({
+      action: 'BRANCH_MEMBERSHIP_SCOPES_GET',
+      resource: 'branch_membership_scopes',
+      companyId: tenant.id,
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        membershipId,
+        scopeCount: branches.length,
+      },
+    });
+
+    return {
+      membershipId: membership.id,
+      userAccountId: membership.userAccountId,
+      role: membership.role,
+      branchIds: branches.map((branch) => branch.id),
+      branches,
+    };
+  }
+
+  async replaceBranchMembershipScopes(
+    tenant: TenantContext,
+    membershipId: string,
+    branchIds: string[],
+    user?: AuthUser,
+  ) {
+    const membership = await this.findBranchAdminMembership(tenant.id, membershipId);
+    const normalizedBranchIds = [...new Set(branchIds)];
+    const branches = await this.listBranchesForScopeIds(tenant, normalizedBranchIds);
+
+    if (branches.length !== normalizedBranchIds.length) {
+      throw new NotFoundException('One or more branches were not found in the tenant');
+    }
+
+    const existingScopes = await this.prisma.branchMembershipScope.findMany({
+      where: {
+        companyId: tenant.id,
+        membershipId,
+      },
+      select: {
+        id: true,
+        branchId: true,
+        deletedAt: true,
+      },
+    });
+
+    const nextScopeIds = new Set(normalizedBranchIds);
+    const scopesToSoftDelete = existingScopes
+      .filter((scope) => !scope.deletedAt && !nextScopeIds.has(scope.branchId))
+      .map((scope) => scope.id);
+
+    await this.prisma.$transaction(async (tx) => {
+      if (scopesToSoftDelete.length > 0) {
+        await tx.branchMembershipScope.updateMany({
+          where: {
+            id: {
+              in: scopesToSoftDelete,
+            },
+          },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+      }
+
+      for (const branchId of normalizedBranchIds) {
+        await tx.branchMembershipScope.upsert({
+          where: {
+            companyId_membershipId_branchId: {
+              companyId: tenant.id,
+              membershipId,
+              branchId,
+            },
+          },
+          update: {
+            deletedAt: null,
+          },
+          create: {
+            companyId: tenant.id,
+            membershipId,
+            branchId,
+          },
+        });
+      }
+    });
+
+    await this.auditService.log({
+      action: 'BRANCH_MEMBERSHIP_SCOPES_REPLACE',
+      resource: 'branch_membership_scopes',
+      companyId: tenant.id,
+      userAccountId: await this.resolveUserAccountId(user),
+      details: {
+        membershipId,
+        branchIds: normalizedBranchIds,
+      },
+    });
+
+    return {
+      membershipId: membership.id,
+      userAccountId: membership.userAccountId,
+      role: membership.role,
+      branchIds: branches.map((branch) => branch.id),
+      branches,
+    };
+  }
+
   private buildSchemaName(slug: string): string {
     return `tenant_${slug.replace(/-/g, '_')}`;
+  }
+
+  private async findBranchAdminMembership(companyId: string, membershipId: string) {
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: {
+        id: membershipId,
+        companyId,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        userAccountId: true,
+        role: true,
+        branchScopes: {
+          where: {
+            companyId,
+            deletedAt: null,
+          },
+          select: {
+            branchId: true,
+          },
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Company membership not found');
+    }
+
+    if (membership.role !== Role.BRANCH_ADMIN) {
+      throw new BadRequestException('Branch scopes can only be managed for BRANCH_ADMIN');
+    }
+
+    return membership;
+  }
+
+  private async listBranchesForScopeIds(tenant: TenantContext, branchIds: string[]) {
+    if (branchIds.length === 0) {
+      return [];
+    }
+
+    return this.tenantDatabase.query<
+      Array<{ id: string; code: string; name: string; status: string; timezone: string }>
+    >(
+      tenant.schemaName,
+      `SELECT
+         "id",
+         "code",
+         "name",
+         "status",
+         "timezone"
+       FROM __TENANT_SCHEMA__."branches"
+       WHERE "id" = ANY($1::uuid[]) AND "deleted_at" IS NULL
+       ORDER BY "created_at" DESC`,
+      branchIds,
+    );
   }
 
   private async resolveUserAccountId(user?: AuthUser): Promise<string | null> {

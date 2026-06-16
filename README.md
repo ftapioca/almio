@@ -52,6 +52,8 @@ Implementado hoy:
   - `GET /v1/admin/companies/:slug`
   - `POST /v1/admin/companies`
   - `GET /v1/admin/plans`
+  - `GET /v1/admin/branch-membership-scopes`
+  - `PUT /v1/admin/branch-membership-scopes/:membershipId`
   - `GET /v1/branches`
   - `POST /v1/branches`
   - `GET /v1/branches/:id`
@@ -95,15 +97,15 @@ Pendiente para próximas fases:
 
 Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
 
-1. cerrar `Fase 3` a nivel de contratos y reglas:
-   - endurecer transiciones de estado de `shifts`
-   - completar casos reales de `attendance` (`BREAK_START`, `BREAK_END`, `CHECK_OUT`)
-2. extender pruebas e2e reales de autorización para `BRANCH_ADMIN`:
-   - accesos negativos fuera de scope en `attendance` y `shifts`
-   - escrituras negativas contra sucursales no asignadas
-3. definir administración operativa de `branch_membership_scopes`:
-   - endpoint admin o backoffice
-   - alta, reemplazo y revocación de scopes sin depender de scripts
+1. cerrar la decisión de contrato para `shifts`:
+   - confirmar si `PATCH` genérico se mantiene
+   - o dividir transiciones en comandos explícitos `publish|cancel|complete`
+2. endurecer más la validación operativa de `attendance/shifts`:
+   - decidir si `attendance` exigirá `Idempotency-Key` antes del tramo offline-first
+   - evaluar pruebas de integración contra Supabase/PostgreSQL real para contratos críticos
+3. consolidar la operación de `branch_membership_scopes`:
+   - definir si el endpoint admin tendrá backoffice/UI dedicado
+   - mantener los scripts Prisma sólo para bootstrap o soporte
 4. recién después abrir el siguiente bloque funcional:
    - `attendance/shifts` UI
    - o `BranchGuard` si aparece una necesidad transversal no resuelta por el patrón actual

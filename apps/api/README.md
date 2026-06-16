@@ -11,6 +11,8 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - `GET /v1/admin/companies/:slug`
 - `POST /v1/admin/companies`
 - `GET /v1/admin/plans`
+- `GET /v1/admin/branch-membership-scopes`
+- `PUT /v1/admin/branch-membership-scopes/:membershipId`
 - `GET /v1/branches`
 - `POST /v1/branches`
 - `GET /v1/branches/:id`
@@ -36,7 +38,7 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 - `ValidationPipe` global
 - e2e HTTP para `403` y aislamiento tenant en RRHH
 - scripts de login y consumo real con `Supabase Auth` para validar `BRANCH_ADMIN`
-- reglas de negocio base en `attendance` y `shifts`
+- reglas de negocio endurecidas en `attendance` y `shifts`
 
 ## Cierre operativo de Fase 1
 
@@ -86,9 +88,9 @@ Backend NestJS alineado con SoW, SDD, SRS, DocAPI y Cronograma.
 
 ## Próximo checkpoint recomendado
 
-1. agregar pruebas e2e reales negativas para `attendance` y `shifts` fuera de scope
-2. formalizar flujo de administración de `branch_membership_scopes` sin depender sólo de scripts
-3. definir si las transiciones de `shifts` seguirán en `PATCH` genérico o pasarán a comandos explícitos `publish|cancel|complete`
+1. definir si las transiciones de `shifts` seguirán en `PATCH` genérico o pasarán a comandos explícitos `publish|cancel|complete`
+2. decidir si `attendance` requerirá `Idempotency-Key` antes del tramo offline-first
+3. definir si `GET|PUT /v1/admin/branch-membership-scopes` tendrá backoffice/UI dedicado
 4. iniciar la capa web sólo después de fijar esos contratos
 
 ## Nota de consistencia

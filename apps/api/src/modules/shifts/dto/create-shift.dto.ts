@@ -18,8 +18,8 @@ export class CreateShiftDto {
   endsAt!: Date;
 
   @IsOptional()
-  @IsIn(['SCHEDULED', 'PUBLISHED', 'CANCELLED', 'COMPLETED'])
-  status?: 'SCHEDULED' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
+  @IsIn(['SCHEDULED', 'PUBLISHED'])
+  status?: 'SCHEDULED' | 'PUBLISHED';
 
   @IsOptional()
   @IsString()

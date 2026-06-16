@@ -67,4 +67,50 @@ describe('AttendanceService', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('rejects an attendance event when it would break the next recorded transition', async () => {
+    const authorizationService = {
+      isBranchAdmin: jest.fn().mockReturnValue(false),
+      isSuperadmin: jest.fn().mockReturnValue(false),
+      isOwner: jest.fn().mockReturnValue(false),
+    };
+    const tenantDatabase = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce([{ id: 'employee-1', branchId: 'branch-1' }])
+        .mockResolvedValueOnce([{ id: 'branch-1' }])
+        .mockResolvedValueOnce([
+          {
+            id: 'prev-1',
+            eventType: 'CHECK_IN',
+            eventAt: new Date('2026-06-15T09:00:00.000Z'),
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'next-1',
+            eventType: 'BREAK_START',
+            eventAt: new Date('2026-06-15T11:00:00.000Z'),
+          },
+        ]),
+    };
+    const auditService = {};
+    const service = new AttendanceService(
+      authorizationService as never,
+      tenantDatabase as never,
+      auditService as never,
+    );
+
+    await expect(
+      service.createAttendanceRecord(
+        { id: 'company-1', slug: 'almio', schemaName: 'tenant_almio' },
+        {
+          branchId: 'branch-1',
+          employeeId: 'employee-1',
+          eventType: 'CHECK_OUT',
+          eventAt: new Date('2026-06-15T10:00:00.000Z'),
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });
