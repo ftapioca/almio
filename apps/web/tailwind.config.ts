@@ -8,12 +8,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#f7f7f5',
-        foreground: '#121212',
-        muted: '#6b7280',
-        brand: '#0f766e',
-        surface: '#ffffff',
-        border: '#e5e7eb',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        muted: 'var(--muted)',
+        brand: 'var(--brand)',
+        'brand-dark': 'var(--brand-dark)',
+        surface: 'var(--surface)',
+        panel: 'var(--panel)',
+        border: 'var(--border)',
+        ink: 'var(--ink)',
+        sand: 'var(--sand)',
+        danger: 'var(--danger)',
+      },
+      boxShadow: {
+        card: '0 20px 60px rgba(53, 40, 20, 0.12)',
       },
     },
   },
@@ -21,4 +29,3 @@ const config: Config = {
 };
 
 export default config;
-

@@ -74,6 +74,8 @@ Implementado hoy:
   - `POST /v1/shifts/:id/cancel`
   - `POST /v1/shifts/:id/complete`
 - scaffold Next.js 15 para portal SaaS / futura PWA
+- backoffice web mínimo para `branch_membership_scopes` en `/backoffice/branch-scopes`
+- auth web real con `Supabase Auth` para proteger el backoffice en `/auth/login`
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
 - workflow de CI para `lint`, `typecheck`, `test` y `build`

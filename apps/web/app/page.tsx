@@ -8,9 +8,9 @@ const pillars = [
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-10 px-6 py-16">
+      <section className="hero-shell mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-10 px-6 py-16">
         <div className="max-w-3xl space-y-4">
-          <p className="text-sm font-medium uppercase tracking-normal text-brand">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-brand">
             Almio · Fase 0
           </p>
           <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
@@ -26,11 +26,36 @@ export default function HomePage() {
           {pillars.map((pillar) => (
             <div
               key={pillar}
-              className="rounded-lg border border-border bg-surface p-5"
+              className="rounded-[24px] border border-border/80 bg-surface/90 p-5 shadow-card backdrop-blur"
             >
               <p className="text-sm font-medium">{pillar}</p>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-[28px] border border-border/80 bg-surface/95 p-6 shadow-card backdrop-blur">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
+                Backoffice interno
+              </p>
+              <h2 className="text-2xl font-semibold">
+                Scopes por sucursal listos para operación manual.
+              </h2>
+              <p className="text-sm leading-6 text-muted">
+                Antes de abrir la UI de asistencia y turnos, ya existe una consola
+                mínima para consultar y reemplazar `branch_membership_scopes`
+                sobre el contrato admin actual.
+              </p>
+            </div>
+
+            <a
+              href="/backoffice/branch-scopes"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark"
+            >
+              Abrir Consola
+            </a>
+          </div>
         </div>
       </section>
     </main>
