@@ -2,6 +2,53 @@
 
 Checklist mínimo de validación post deploy.
 
+## Smoke Suite Automatizada
+
+Existe un smoke suite automatizado para el frente actual de backoffice:
+
+```bash
+BACKOFFICE_SMOKE_API_URL=http://localhost:3001/v1 \
+BACKOFFICE_SMOKE_WEB_URL=http://localhost:3000 \
+BACKOFFICE_SMOKE_TENANT_ID=almio \
+BACKOFFICE_SMOKE_EMAIL=owner-web@almio.cl \
+BACKOFFICE_SMOKE_PASSWORD=AlmioOwner2026 \
+pnpm prisma:backoffice-smoke-check
+```
+
+Opcionalmente puede incluirse un probe admin:
+
+```bash
+BACKOFFICE_SMOKE_MEMBERSHIP_ID=<uuid-membership> \
+pnpm prisma:backoffice-smoke-check
+```
+
+Modo anónimo, sin login real:
+
+```bash
+BACKOFFICE_SMOKE_MODE=anonymous \
+pnpm prisma:backoffice-smoke-check
+```
+
+La suite valida:
+
+- `/auth/login` renderiza correctamente
+- `/backoffice`, `/backoffice/attendance`, `/backoffice/shifts` y `/backoffice/branch-scopes` redirigen a login sin sesión
+- `health/live` y `health/ready`
+- login real contra `Supabase Auth`
+- probes autenticados a `me`, `branches`, `employees`, `attendance` y `shifts`
+- probe opcional a `admin/branch-membership-scopes`
+
+## Nota Local
+
+Si la suite falla sólo en web local con `500` y mensajes tipo `Cannot find module './3.js'`
+desde `.next/server`, el problema suele ser un `next dev` viejo o corrupto.
+
+Acción recomendada:
+
+1. detener el server web local actual
+2. levantarlo de nuevo con `pnpm dev:web`
+3. repetir la suite
+
 ## API
 
 Ejecutar:

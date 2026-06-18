@@ -15,6 +15,7 @@
     "prisma:assign-branch-scopes": "ts-node prisma/assign-branch-scopes.ts",
     "prisma:login-and-test-branch-admin": "ts-node prisma/login-and-test-branch-admin.ts",
     "prisma:exercise-branch-admin-business-rules": "ts-node prisma/exercise-branch-admin-business-rules.ts",
+    "prisma:backoffice-smoke-check": "ts-node prisma/backoffice-smoke-check.ts",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",

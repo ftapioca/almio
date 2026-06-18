@@ -83,6 +83,7 @@ Implementado hoy:
 - auth web real con `Supabase Auth` para proteger el backoffice en `/auth/login`
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
+- smoke suite automatizado de backoffice vía `pnpm prisma:backoffice-smoke-check`
 - workflow de CI para `lint`, `typecheck`, `test` y `build`
 - runtime config inicial para despliegue:
   - `API_PORT` real en bootstrap de API

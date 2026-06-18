@@ -33,6 +33,7 @@
     "prisma:assign-branch-scopes": "pnpm --filter @almio/api prisma:assign-branch-scopes",
     "prisma:login-and-test-branch-admin": "pnpm --filter @almio/api prisma:login-and-test-branch-admin",
     "prisma:exercise-branch-admin-business-rules": "pnpm --filter @almio/api prisma:exercise-branch-admin-business-rules",
+    "prisma:backoffice-smoke-check": "pnpm --filter @almio/api prisma:backoffice-smoke-check",
     "prisma:promote-superadmin": "pnpm --filter @almio/api prisma:promote-superadmin",
     "prisma:seed": "pnpm --filter @almio/api prisma:seed",
     "prisma:validate": "pnpm --filter @almio/api prisma:validate",

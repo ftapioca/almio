@@ -16,6 +16,7 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 - auth web real con `Supabase Auth` en `/auth/login`
 - protección server-side del backoffice usando sesión Supabase
 - carga automática del `Bearer token` de sesión dentro de la consola de scopes
+- smoke suite automatizado de backoffice disponible vía `pnpm prisma:backoffice-smoke-check`
 - base lista para seguir endureciendo UI funcional de `attendance` y `shifts` sin rehacer auth ni wiring de sesión
 
 ## Objetivos de las siguientes fases
