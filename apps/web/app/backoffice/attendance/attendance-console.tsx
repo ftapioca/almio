@@ -27,7 +27,7 @@ type AttendanceRecord = {
   employeeId: string;
   eventType: 'CHECK_IN' | 'CHECK_OUT' | 'BREAK_START' | 'BREAK_END';
   eventAt: string;
-  source: string;
+  source: 'MANUAL' | 'DEVICE' | 'IMPORT';
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +38,12 @@ const attendanceEventOptions: AttendanceRecord['eventType'][] = [
   'BREAK_START',
   'BREAK_END',
   'CHECK_OUT',
+];
+
+const attendanceSourceOptions: AttendanceRecord['source'][] = [
+  'MANUAL',
+  'DEVICE',
+  'IMPORT',
 ];
 
 function normalizeApiBaseUrl(value: string) {
@@ -84,12 +90,16 @@ export function AttendanceConsole({
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [selectedRecordId, setSelectedRecordId] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [filterBranchId, setFilterBranchId] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
   const [filterEventType, setFilterEventType] = useState('');
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo] = useState('');
   const [eventType, setEventType] = useState<AttendanceRecord['eventType']>('CHECK_IN');
+  const [source, setSource] = useState<AttendanceRecord['source']>('MANUAL');
   const [eventAtInput, setEventAtInput] = useState(toDatetimeLocalValue());
   const [notes, setNotes] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState('');
@@ -168,6 +178,17 @@ export function AttendanceConsole({
     return employees.filter((employee) => employee.branchId === selectedBranchId);
   }, [employees, selectedBranchId]);
 
+  function resetEditor() {
+    setSelectedRecordId('');
+    setSelectedBranchId(backoffice.activeBranchId ?? '');
+    setSelectedEmployeeId('');
+    setEventType('CHECK_IN');
+    setSource('MANUAL');
+    setEventAtInput(toDatetimeLocalValue());
+    setNotes('');
+    setIdempotencyKey(crypto.randomUUID());
+  }
+
   async function loadReferenceData(currentToken: string) {
     const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
     const headers = {
@@ -202,6 +223,12 @@ export function AttendanceConsole({
     if (filterEventType) {
       params.set('eventType', filterEventType);
     }
+    if (filterFrom) {
+      params.set('from', new Date(filterFrom).toISOString());
+    }
+    if (filterTo) {
+      params.set('to', new Date(filterTo).toISOString());
+    }
 
     const response = await fetch(`${baseUrl}/attendance?${params.toString()}`, {
       headers: {
@@ -211,7 +238,27 @@ export function AttendanceConsole({
     });
 
     const payload = await parseApiResponse(response);
-    setRecords(payload.data as AttendanceRecord[]);
+    const nextRecords = payload.data as AttendanceRecord[];
+    setRecords(nextRecords);
+
+    if (selectedRecordId && !nextRecords.some((record) => record.id === selectedRecordId)) {
+      setSelectedRecordId('');
+    }
+  }
+
+  async function loadAttendanceRecordById(recordId: string, currentToken: string) {
+    const response = await fetch(
+      `${normalizeApiBaseUrl(apiBaseUrl)}/attendance/${recordId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentToken.trim()}`,
+          'X-Tenant-ID': tenantId.trim(),
+        },
+      },
+    );
+
+    const payload = await parseApiResponse(response);
+    return payload.data as AttendanceRecord;
   }
 
   async function initializeConsole() {
@@ -257,7 +304,12 @@ export function AttendanceConsole({
   async function handleCreateAttendance(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!selectedBranchId || !selectedEmployeeId || !accessToken.trim()) {
+    if (
+      !selectedBranchId ||
+      !selectedEmployeeId ||
+      !eventAtInput ||
+      !accessToken.trim()
+    ) {
       setError('Sucursal, colaborador y sesion son obligatorios');
       return;
     }
@@ -280,7 +332,7 @@ export function AttendanceConsole({
           employeeId: selectedEmployeeId,
           eventType,
           eventAt: new Date(eventAtInput).toISOString(),
-          source: 'MANUAL',
+          source,
           notes: notes.trim() || undefined,
         }),
       });
@@ -291,15 +343,107 @@ export function AttendanceConsole({
       setSuccess(
         `Marcacion ${createdRecord.eventType} registrada para ${formatDateTime(createdRecord.eventAt)}`,
       );
-      setNotes('');
-      setEventAtInput(toDatetimeLocalValue());
-      setIdempotencyKey(crypto.randomUUID());
+      resetEditor();
       await loadAttendance(accessToken);
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : 'Error inesperado al crear la marcacion',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleUpdateAttendance(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !selectedRecordId ||
+      !selectedBranchId ||
+      !selectedEmployeeId ||
+      !eventAtInput ||
+      !accessToken.trim()
+    ) {
+      setError('Debes cargar una marcacion y completar sucursal, colaborador y fecha');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(
+        `${normalizeApiBaseUrl(apiBaseUrl)}/attendance/${selectedRecordId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${accessToken.trim()}`,
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': tenantId.trim(),
+          },
+          body: JSON.stringify({
+            branchId: selectedBranchId,
+            employeeId: selectedEmployeeId,
+            eventType,
+            eventAt: new Date(eventAtInput).toISOString(),
+            source,
+            notes: notes.trim() || null,
+          }),
+        },
+      );
+
+      const payload = await parseApiResponse(response);
+      const updatedRecord = payload.data as AttendanceRecord;
+
+      setSuccess(`Marcacion ${updatedRecord.id} actualizada`);
+      await loadAttendance(accessToken);
+      setSelectedRecordId(updatedRecord.id);
+      setSelectedBranchId(updatedRecord.branchId);
+      setSelectedEmployeeId(updatedRecord.employeeId);
+      setEventType(updatedRecord.eventType);
+      setSource(updatedRecord.source);
+      setEventAtInput(toDatetimeLocalValue(new Date(updatedRecord.eventAt)));
+      setNotes(updatedRecord.notes ?? '');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Error inesperado al actualizar la marcacion',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loadRecordIntoEditor(recordId: string) {
+    if (!accessToken.trim()) {
+      setError('No hay sesion activa para cargar la marcacion');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const record = await loadAttendanceRecordById(recordId, accessToken);
+      setSelectedRecordId(record.id);
+      setSelectedBranchId(record.branchId);
+      backoffice.setActiveBranchId(record.branchId);
+      setSelectedEmployeeId(record.employeeId);
+      setEventType(record.eventType);
+      setSource(record.source);
+      setEventAtInput(toDatetimeLocalValue(new Date(record.eventAt)));
+      setNotes(record.notes ?? '');
+      setSuccess(`Marcacion ${record.id} cargada para edición`);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Error inesperado al cargar la marcacion',
       );
     } finally {
       setIsLoading(false);
@@ -352,7 +496,7 @@ export function AttendanceConsole({
         </div>
 
         <form className="mt-6 grid gap-4" onSubmit={handleFiltersSubmit}>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-5">
             <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 Filtrar por sucursal
@@ -412,6 +556,30 @@ export function AttendanceConsole({
                 ))}
               </select>
             </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Desde
+              </span>
+              <input
+                className="field-input"
+                type="datetime-local"
+                value={filterFrom}
+                onChange={(event) => setFilterFrom(event.target.value)}
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Hasta
+              </span>
+              <input
+                className="field-input"
+                type="datetime-local"
+                value={filterTo}
+                onChange={(event) => setFilterTo(event.target.value)}
+              />
+            </label>
           </div>
 
           <button
@@ -425,14 +593,29 @@ export function AttendanceConsole({
       </div>
 
       <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Nueva marcacion manual</p>
-          <p className="text-sm text-muted">
-            La UI genera un `Idempotency-Key` por envio y usa `source=MANUAL`.
-          </p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold">
+              {selectedRecordId ? 'Editar marcacion' : 'Nueva marcacion'}
+            </p>
+            <p className="text-sm text-muted">
+              La UI genera `Idempotency-Key` para altas y permite ajustar source, fecha y notas.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={resetEditor}
+            className="inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-panel px-5 text-sm font-semibold text-foreground transition hover:bg-surface"
+          >
+            Nueva marcacion
+          </button>
         </div>
 
-        <form className="mt-6 grid gap-4" onSubmit={handleCreateAttendance}>
+        <form
+          className="mt-6 grid gap-4"
+          onSubmit={selectedRecordId ? handleUpdateAttendance : handleCreateAttendance}
+        >
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
@@ -499,6 +682,25 @@ export function AttendanceConsole({
 
             <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Source
+              </span>
+              <select
+                className="field-input"
+                value={source}
+                onChange={(event) =>
+                  setSource(event.target.value as AttendanceRecord['source'])
+                }
+              >
+                {attendanceSourceOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 Fecha y hora
               </span>
               <input
@@ -544,7 +746,13 @@ export function AttendanceConsole({
               !accessToken.trim()
             }
           >
-            {isLoading ? 'Registrando...' : 'Registrar marcacion'}
+            {isLoading
+              ? selectedRecordId
+                ? 'Actualizando...'
+                : 'Registrando...'
+              : selectedRecordId
+                ? 'Actualizar marcacion'
+                : 'Registrar marcacion'}
           </button>
         </form>
       </div>
@@ -593,6 +801,13 @@ export function AttendanceConsole({
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                    <button
+                      type="button"
+                      onClick={() => void loadRecordIntoEditor(record.id)}
+                      className="inline-flex items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand transition hover:border-brand/50 hover:bg-brand/12"
+                    >
+                      Cargar
+                    </button>
                     <span className="rounded-full border border-border/70 px-3 py-1">
                       {record.source}
                     </span>

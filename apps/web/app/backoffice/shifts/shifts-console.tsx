@@ -83,6 +83,10 @@ function getAllowedCommands(status: ShiftStatus) {
   }
 }
 
+function canEditShiftStructure(status: ShiftStatus) {
+  return status !== 'COMPLETED' && status !== 'CANCELLED';
+}
+
 export function ShiftsConsole({
   initialApiBaseUrl,
   initialTenantId,
@@ -288,6 +292,10 @@ export function ShiftsConsole({
     setNotes(shift.notes ?? '');
   }
 
+  function hasValidScheduleRange() {
+    return new Date(startsAtInput).getTime() < new Date(endsAtInput).getTime();
+  }
+
   async function handleRefresh() {
     setSuccess(null);
     await initializeConsole();
@@ -304,6 +312,14 @@ export function ShiftsConsole({
 
     if (!selectedBranchId || !accessToken.trim()) {
       setError('Sucursal y sesion son obligatorias');
+      return;
+    }
+    if (!hasValidScheduleRange()) {
+      setError('La fecha de inicio debe ser anterior a la fecha de fin');
+      return;
+    }
+    if (selectedStatus === 'PUBLISHED' && !selectedEmployeeId) {
+      setError('Un turno PUBLISHED debe quedar asignado a un colaborador');
       return;
     }
 
@@ -353,6 +369,14 @@ export function ShiftsConsole({
 
     if (!selectedShift || !selectedBranchId || !accessToken.trim()) {
       setError('Debes seleccionar un turno, una sucursal y una sesion válida');
+      return;
+    }
+    if (!canEditShiftStructure(selectedShift.status)) {
+      setError(`No se puede editar la estructura de un turno ${selectedShift.status}`);
+      return;
+    }
+    if (!hasValidScheduleRange()) {
+      setError('La fecha de inicio debe ser anterior a la fecha de fin');
       return;
     }
 
@@ -668,7 +692,14 @@ export function ShiftsConsole({
                 <option value="PUBLISHED">PUBLISHED</option>
               </select>
             </label>
-          ) : null}
+          ) : (
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Estado actual
+              </span>
+              <input className="field-input" value={selectedShift.status} readOnly />
+            </label>
+          )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <label className="grid gap-2">
@@ -710,10 +741,22 @@ export function ShiftsConsole({
             />
           </label>
 
+          {selectedShift && !canEditShiftStructure(selectedShift.status) ? (
+            <div className="rounded-[20px] border border-border/70 bg-panel p-4 text-sm text-muted">
+              Este turno está en estado {selectedShift.status}. Solo conviene revisarlo o usar
+              comandos permitidos desde la lista; la edición estructural queda bloqueada.
+            </div>
+          ) : null}
+
           <button
             type="submit"
             className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading || !selectedBranchId || !accessToken.trim()}
+            disabled={
+              isLoading ||
+              !selectedBranchId ||
+              !accessToken.trim() ||
+              !!(selectedShift && !canEditShiftStructure(selectedShift.status))
+            }
           >
             {isLoading
               ? selectedShift
