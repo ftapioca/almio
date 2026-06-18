@@ -1,0 +1,79 @@
+name: Backoffice Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: anonymous or full
+        required: true
+        default: full
+        type: choice
+        options:
+          - full
+          - anonymous
+      api_base_url:
+        description: Base URL de la API, incluyendo /v1
+        required: true
+        default: https://almio-api.vercel.app/v1
+        type: string
+      web_base_url:
+        description: Base URL de la web
+        required: true
+        default: https://almio-web.vercel.app
+        type: string
+      tenant_id:
+        description: Tenant ID / slug
+        required: true
+        default: almio
+        type: string
+      membership_id:
+        description: Membership UUID opcional para probe admin
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run anonymous smoke
+        if: ${{ inputs.mode == 'anonymous' }}
+        env:
+          BACKOFFICE_SMOKE_MODE: anonymous
+          BACKOFFICE_SMOKE_API_URL: ${{ inputs.api_base_url }}
+          BACKOFFICE_SMOKE_WEB_URL: ${{ inputs.web_base_url }}
+          BACKOFFICE_SMOKE_TENANT_ID: ${{ inputs.tenant_id }}
+        run: pnpm prisma:backoffice-smoke-check
+
+      - name: Run full smoke
+        if: ${{ inputs.mode == 'full' }}
+        env:
+          BACKOFFICE_SMOKE_MODE: full
+          BACKOFFICE_SMOKE_API_URL: ${{ inputs.api_base_url }}
+          BACKOFFICE_SMOKE_WEB_URL: ${{ inputs.web_base_url }}
+          BACKOFFICE_SMOKE_TENANT_ID: ${{ inputs.tenant_id }}
+          BACKOFFICE_SMOKE_MEMBERSHIP_ID: ${{ inputs.membership_id }}
+          BACKOFFICE_SMOKE_EMAIL: ${{ secrets.BACKOFFICE_SMOKE_EMAIL }}
+          BACKOFFICE_SMOKE_PASSWORD: ${{ secrets.BACKOFFICE_SMOKE_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: pnpm prisma:backoffice-smoke-check

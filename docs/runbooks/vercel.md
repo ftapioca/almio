@@ -111,6 +111,10 @@ Orden recomendado de despliegue en producción:
 4. desplegar `almio-web`
 5. correr smoke checks
 
+Opción repetible recomendada:
+
+- lanzar el workflow `Backoffice Smoke` desde GitHub Actions usando las URLs públicas de `almio-api` y `almio-web`
+
 ## CLI Notes
 
 Si se usa Vercel CLI, hacerlo desde la carpeta correcta del proyecto:

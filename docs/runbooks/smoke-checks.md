@@ -38,6 +38,35 @@ La suite valida:
 - probes autenticados a `me`, `branches`, `employees`, `attendance` y `shifts`
 - probe opcional a `admin/branch-membership-scopes`
 
+## GitHub Actions
+
+Quedó disponible un workflow manual:
+
+- `.github/workflows/backoffice-smoke.yml`
+
+Uso recomendado post deploy:
+
+1. ir a `Actions`
+2. abrir `Backoffice Smoke`
+3. ejecutar `Run workflow`
+4. elegir:
+   - `mode=anonymous` para validar sólo web sin sesión + health API
+   - `mode=full` para validar también login real y probes autenticados
+
+Secrets requeridos para `mode=full`:
+
+- `BACKOFFICE_SMOKE_EMAIL`
+- `BACKOFFICE_SMOKE_PASSWORD`
+- `SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+Inputs relevantes:
+
+- `api_base_url`
+- `web_base_url`
+- `tenant_id`
+- `membership_id` opcional para probe admin
+
 ## Nota Local
 
 Si la suite falla sólo en web local con `500` y mensajes tipo `Cannot find module './3.js'`

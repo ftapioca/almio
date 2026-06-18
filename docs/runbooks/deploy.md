@@ -55,6 +55,10 @@ curl -i "$API_BASE_URL/v1/health/ready"
 4. Desplegar `apps/web` con `NEXT_PUBLIC_API_URL` apuntando a la API ya actualizada.
 5. Ejecutar smoke checks de post deploy.
 
+Opción recomendada:
+
+- correr el workflow manual `Backoffice Smoke` en GitHub Actions contra las URLs desplegadas
+
 ## Notes
 
 - `pnpm prisma:migrate:release` corre primero `public`, luego `tenant`.

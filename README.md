@@ -84,6 +84,7 @@ Implementado hoy:
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
 - smoke suite automatizado de backoffice vía `pnpm prisma:backoffice-smoke-check`
+- workflow manual `Backoffice Smoke` en GitHub Actions para validación post deploy
 - workflow de CI para `lint`, `typecheck`, `test` y `build`
 - runtime config inicial para despliegue:
   - `API_PORT` real en bootstrap de API
