@@ -4,13 +4,18 @@ import { SignOutButton } from '../branch-scopes/sign-out-button';
 import { BackofficeClientContextProvider } from './backoffice-client-context';
 import { BackofficeContextPanel } from './backoffice-context-panel';
 
-type BackofficeNavKey = 'attendance' | 'shifts' | 'branch-scopes';
+type BackofficeNavKey = 'home' | 'attendance' | 'shifts' | 'branch-scopes';
 
 const navItems: Array<{
   href: string;
   key: BackofficeNavKey;
   label: string;
 }> = [
+  {
+    href: '/backoffice',
+    key: 'home',
+    label: 'Home',
+  },
   {
     href: '/backoffice/attendance',
     key: 'attendance',

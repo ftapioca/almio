@@ -7,6 +7,7 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 - layout base del portal
 - shell compartido de backoffice con navegación y sesión reutilizable
 - contexto cliente compartido de backoffice con `tenant`, `/v1/me` y sucursal activa
+- home protegida de backoffice en `/backoffice`
 - landing interna de `Fase 0`
 - setup inicial de TailwindCSS
 - backoffice mínimo en `/backoffice/branch-scopes` para consultar y reemplazar `branch_membership_scopes`
