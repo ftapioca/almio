@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "start:dev": "nest start --watch",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "lint": "eslint \"src/**/*.ts\"",
     "prisma:migrate:tenants": "ts-node prisma/migrate-tenants.ts",
+    "prisma:migrate:release": "ts-node prisma/release-migrate.ts",
     "prisma:upsert-company-membership": "ts-node prisma/upsert-company-membership.ts",
     "prisma:provision-supabase-auth-user": "ts-node prisma/provision-supabase-auth-user.ts",
     "prisma:format": "prisma format",

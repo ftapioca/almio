@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
@@ -17,6 +27,7 @@
     "prisma:generate": "pnpm --filter @almio/api prisma:generate",
     "prisma:migrate:deploy": "pnpm --filter @almio/api prisma:migrate:deploy",
     "prisma:migrate:tenants": "pnpm --filter @almio/api prisma:migrate:tenants",
+    "prisma:migrate:release": "pnpm --filter @almio/api prisma:migrate:release",
     "prisma:upsert-company-membership": "pnpm --filter @almio/api prisma:upsert-company-membership",
     "prisma:provision-supabase-auth-user": "pnpm --filter @almio/api prisma:provision-supabase-auth-user",
     "prisma:assign-branch-scopes": "pnpm --filter @almio/api prisma:assign-branch-scopes",
