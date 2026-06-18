@@ -59,6 +59,23 @@ function formatDateTime(value: string) {
   });
 }
 
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('es-CL', {
+    dateStyle: 'medium',
+  });
+}
+
+function getDayBounds(value: string) {
+  const source = value ? new Date(value) : new Date();
+  const start = new Date(source);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(source);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
 async function parseApiResponse(response: Response) {
   const payload = await response.json();
   if (!response.ok) {
@@ -117,6 +134,7 @@ export function ShiftsConsole({
   const [filterStatus, setFilterStatus] = useState('');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
+  const [coverageDateInput, setCoverageDateInput] = useState(toDatetimeLocalValue());
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -189,6 +207,65 @@ export function ShiftsConsole({
 
     return employees.filter((employee) => employee.branchId === selectedBranchId);
   }, [employees, selectedBranchId]);
+
+  const localOverlapRecords = useMemo(() => {
+    if (!selectedEmployeeId || !selectedBranchId || !startsAtInput || !endsAtInput) {
+      return [];
+    }
+
+    const nextStart = new Date(startsAtInput).getTime();
+    const nextEnd = new Date(endsAtInput).getTime();
+
+    if (Number.isNaN(nextStart) || Number.isNaN(nextEnd) || nextStart >= nextEnd) {
+      return [];
+    }
+
+    return records.filter((record) => {
+      if (record.id === selectedShiftId) {
+        return false;
+      }
+      if (record.branchId !== selectedBranchId || record.employeeId !== selectedEmployeeId) {
+        return false;
+      }
+
+      const recordStart = new Date(record.startsAt).getTime();
+      const recordEnd = new Date(record.endsAt).getTime();
+
+      return nextStart < recordEnd && nextEnd > recordStart;
+    });
+  }, [endsAtInput, records, selectedBranchId, selectedEmployeeId, selectedShiftId, startsAtInput]);
+
+  const coverageSummary = useMemo(() => {
+    const branchId = filterBranchId || selectedBranchId;
+    const { start, end } = getDayBounds(coverageDateInput);
+
+    const dayRecords = records.filter((record) => {
+      if (branchId && record.branchId !== branchId) {
+        return false;
+      }
+
+      const recordStart = new Date(record.startsAt).getTime();
+      return recordStart >= start.getTime() && recordStart <= end.getTime();
+    });
+
+    const assignedRecords = dayRecords.filter((record) => !!record.employeeId);
+    const uniqueEmployees = new Set(
+      assignedRecords.map((record) => record.employeeId).filter(Boolean),
+    );
+
+    return {
+      branchId,
+      dateLabel: formatDate(coverageDateInput),
+      totalShifts: dayRecords.length,
+      assignedShifts: assignedRecords.length,
+      publishedShifts: dayRecords.filter((record) => record.status === 'PUBLISHED').length,
+      completedShifts: dayRecords.filter((record) => record.status === 'COMPLETED').length,
+      uniqueEmployees: uniqueEmployees.size,
+      records: dayRecords.sort(
+        (left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+      ),
+    };
+  }, [coverageDateInput, filterBranchId, records, selectedBranchId]);
 
   async function loadReferenceData(currentToken: string) {
     const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
@@ -275,7 +352,7 @@ export function ShiftsConsole({
 
   function resetEditor() {
     setSelectedShiftId('');
-    setSelectedBranchId('');
+    setSelectedBranchId(backoffice.activeBranchId ?? '');
     setSelectedEmployeeId('');
     setSelectedStatus('SCHEDULED');
     setStartsAtInput(toDatetimeLocalValue());
@@ -320,6 +397,10 @@ export function ShiftsConsole({
     }
     if (selectedStatus === 'PUBLISHED' && !selectedEmployeeId) {
       setError('Un turno PUBLISHED debe quedar asignado a un colaborador');
+      return;
+    }
+    if (localOverlapRecords.length > 0) {
+      setError('El turno se solapa con otro turno ya cargado para el mismo colaborador');
       return;
     }
 
@@ -377,6 +458,10 @@ export function ShiftsConsole({
     }
     if (!hasValidScheduleRange()) {
       setError('La fecha de inicio debe ser anterior a la fecha de fin');
+      return;
+    }
+    if (localOverlapRecords.length > 0) {
+      setError('El turno se solapa con otro turno ya cargado para el mismo colaborador');
       return;
     }
 
@@ -604,6 +689,105 @@ export function ShiftsConsole({
       <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
+            <p className="text-sm font-semibold">Cobertura del día</p>
+            <p className="text-sm text-muted">
+              Resumen operativo con la data cargada para sucursal y fecha objetivo.
+            </p>
+          </div>
+
+          <label className="grid gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Día de cobertura
+            </span>
+            <input
+              className="field-input"
+              type="datetime-local"
+              value={coverageDateInput}
+              onChange={(event) => setCoverageDateInput(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-4">
+          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Sucursal analizada
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {coverageSummary.branchId
+                ? branchNameById.get(coverageSummary.branchId) ?? coverageSummary.branchId
+                : 'Todas las cargadas'}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Turnos del día
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {coverageSummary.totalShifts}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Asignados / publicados
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {coverageSummary.assignedShifts} / {coverageSummary.publishedShifts}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              Dotación única
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {coverageSummary.uniqueEmployees}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-border/70 bg-panel p-5">
+          <p className="text-sm font-semibold">Agenda de cobertura: {coverageSummary.dateLabel}</p>
+          <div className="mt-4 grid gap-3">
+            {coverageSummary.records.length > 0 ? (
+              coverageSummary.records.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex flex-col gap-2 rounded-[18px] border border-border/70 bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {employeeNameById.get(record.employeeId ?? '') ?? 'Sin asignar'}
+                    </p>
+                    <p className="text-sm text-muted">
+                      {formatDateTime(record.startsAt)} → {formatDateTime(record.endsAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                    <span className="rounded-full border border-border/70 px-3 py-1">
+                      {record.status}
+                    </span>
+                    <span className="rounded-full border border-border/70 px-3 py-1">
+                      {record.id}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted">
+                No hay turnos cargados para esa fecha con los filtros actuales.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
             <p className="text-sm font-semibold">Editor de turnos</p>
             <p className="text-sm text-muted">
               Crea un turno nuevo o carga uno existente para editar datos permitidos.
@@ -741,6 +925,13 @@ export function ShiftsConsole({
             />
           </label>
 
+          {localOverlapRecords.length > 0 ? (
+            <div className="rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
+              El turno propuesto se solapa con {localOverlapRecords.length} turno(s) ya cargado(s)
+              para este colaborador en la misma sucursal.
+            </div>
+          ) : null}
+
           {selectedShift && !canEditShiftStructure(selectedShift.status) ? (
             <div className="rounded-[20px] border border-border/70 bg-panel p-4 text-sm text-muted">
               Este turno está en estado {selectedShift.status}. Solo conviene revisarlo o usar
@@ -755,6 +946,7 @@ export function ShiftsConsole({
               isLoading ||
               !selectedBranchId ||
               !accessToken.trim() ||
+              localOverlapRecords.length > 0 ||
               !!(selectedShift && !canEditShiftStructure(selectedShift.status))
             }
           >

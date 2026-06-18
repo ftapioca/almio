@@ -63,6 +63,47 @@ function formatDateTime(value: string) {
   });
 }
 
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('es-CL', {
+    dateStyle: 'medium',
+  });
+}
+
+function getDayBounds(value: string) {
+  const source = value ? new Date(value) : new Date();
+  const start = new Date(source);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(source);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+function deriveAttendanceJourneyStatus(records: AttendanceRecord[]) {
+  const ordered = [...records].sort(
+    (left, right) => new Date(left.eventAt).getTime() - new Date(right.eventAt).getTime(),
+  );
+  const lastRecord = ordered.at(-1);
+
+  if (!lastRecord) {
+    return 'Sin actividad';
+  }
+
+  switch (lastRecord.eventType) {
+    case 'CHECK_IN':
+      return 'En jornada';
+    case 'BREAK_START':
+      return 'En colación/pausa';
+    case 'BREAK_END':
+      return 'De vuelta de pausa';
+    case 'CHECK_OUT':
+      return 'Jornada cerrada';
+    default:
+      return 'Estado no derivado';
+  }
+}
+
 async function parseApiResponse(response: Response) {
   const payload = await response.json();
   if (!response.ok) {
@@ -90,11 +131,14 @@ export function AttendanceConsole({
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [employeeDayRecords, setEmployeeDayRecords] = useState<AttendanceRecord[]>([]);
   const [selectedRecordId, setSelectedRecordId] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
   const [filterBranchId, setFilterBranchId] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [filterEmployeeSearchTerm, setFilterEmployeeSearchTerm] = useState('');
   const [filterEventType, setFilterEventType] = useState('');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
@@ -178,10 +222,62 @@ export function AttendanceConsole({
     return employees.filter((employee) => employee.branchId === selectedBranchId);
   }, [employees, selectedBranchId]);
 
+  const employeesForSelectedBranchFiltered = useMemo(() => {
+    const search = employeeSearchTerm.trim().toLowerCase();
+
+    if (!search) {
+      return employeesForSelectedBranch;
+    }
+
+    return employeesForSelectedBranch.filter((employee) => {
+      const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+      return (
+        fullName.includes(search) ||
+        employee.email?.toLowerCase().includes(search) ||
+        employee.id.toLowerCase().includes(search)
+      );
+    });
+  }, [employeeSearchTerm, employeesForSelectedBranch]);
+
+  const employeesForFilterBranchFiltered = useMemo(() => {
+    const search = filterEmployeeSearchTerm.trim().toLowerCase();
+    const scopedEmployees = employees.filter(
+      (employee) => !filterBranchId || employee.branchId === filterBranchId,
+    );
+
+    if (!search) {
+      return scopedEmployees;
+    }
+
+    return scopedEmployees.filter((employee) => {
+      const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+      return (
+        fullName.includes(search) ||
+        employee.email?.toLowerCase().includes(search) ||
+        employee.id.toLowerCase().includes(search)
+      );
+    });
+  }, [employees, filterBranchId, filterEmployeeSearchTerm]);
+
+  const attendanceJourneySummary = useMemo(() => {
+    const ordered = [...employeeDayRecords].sort(
+      (left, right) => new Date(left.eventAt).getTime() - new Date(right.eventAt).getTime(),
+    );
+
+    return {
+      orderedRecords: ordered,
+      firstRecord: ordered.at(0) ?? null,
+      lastRecord: ordered.at(-1) ?? null,
+      totalEvents: ordered.length,
+      currentStatus: deriveAttendanceJourneyStatus(ordered),
+    };
+  }, [employeeDayRecords]);
+
   function resetEditor() {
     setSelectedRecordId('');
     setSelectedBranchId(backoffice.activeBranchId ?? '');
     setSelectedEmployeeId('');
+    setEmployeeSearchTerm('');
     setEventType('CHECK_IN');
     setSource('MANUAL');
     setEventAtInput(toDatetimeLocalValue());
@@ -261,6 +357,36 @@ export function AttendanceConsole({
     return payload.data as AttendanceRecord;
   }
 
+  async function loadEmployeeDaySummary(
+    currentToken: string,
+    branchId: string,
+    employeeId: string,
+    eventAtValue: string,
+  ) {
+    const { start, end } = getDayBounds(eventAtValue);
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '100',
+      branchId,
+      employeeId,
+      from: start.toISOString(),
+      to: end.toISOString(),
+    });
+
+    const response = await fetch(
+      `${normalizeApiBaseUrl(apiBaseUrl)}/attendance?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentToken.trim()}`,
+          'X-Tenant-ID': tenantId.trim(),
+        },
+      },
+    );
+
+    const payload = await parseApiResponse(response);
+    setEmployeeDayRecords(payload.data as AttendanceRecord[]);
+  }
+
   async function initializeConsole() {
     if (!accessToken.trim() || !tenantId.trim()) {
       return;
@@ -289,6 +415,23 @@ export function AttendanceConsole({
     void initializeConsole();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, tenantId]);
+
+  useEffect(() => {
+    if (!accessToken.trim() || !selectedBranchId || !selectedEmployeeId || !eventAtInput) {
+      setEmployeeDayRecords([]);
+      return;
+    }
+
+    void loadEmployeeDaySummary(
+      accessToken,
+      selectedBranchId,
+      selectedEmployeeId,
+      eventAtInput,
+    ).catch(() => {
+      setEmployeeDayRecords([]);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, selectedBranchId, selectedEmployeeId, eventAtInput, tenantId, apiBaseUrl]);
 
   async function handleRefresh() {
     setSuccess(null);
@@ -508,6 +651,7 @@ export function AttendanceConsole({
                   setFilterBranchId(event.target.value);
                   backoffice.setActiveBranchId(event.target.value);
                   setFilterEmployeeId('');
+                  setFilterEmployeeSearchTerm('');
                 }}
               >
                 <option value="">Todas</option>
@@ -521,6 +665,18 @@ export function AttendanceConsole({
 
             <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Buscar colaborador
+              </span>
+              <input
+                className="field-input"
+                value={filterEmployeeSearchTerm}
+                onChange={(event) => setFilterEmployeeSearchTerm(event.target.value)}
+                placeholder="Nombre, email o UUID"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 Filtrar por colaborador
               </span>
               <select
@@ -529,13 +685,11 @@ export function AttendanceConsole({
                 onChange={(event) => setFilterEmployeeId(event.target.value)}
               >
                 <option value="">Todos</option>
-                {employees
-                  .filter((employee) => !filterBranchId || employee.branchId === filterBranchId)
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.firstName} {employee.lastName}
-                    </option>
-                  ))}
+                {employeesForFilterBranchFiltered.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.firstName} {employee.lastName}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -628,6 +782,7 @@ export function AttendanceConsole({
                   setSelectedBranchId(event.target.value);
                   backoffice.setActiveBranchId(event.target.value);
                   setSelectedEmployeeId('');
+                  setEmployeeSearchTerm('');
                 }}
                 required
               >
@@ -642,6 +797,18 @@ export function AttendanceConsole({
 
             <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                Buscar colaborador
+              </span>
+              <input
+                className="field-input"
+                value={employeeSearchTerm}
+                onChange={(event) => setEmployeeSearchTerm(event.target.value)}
+                placeholder="Nombre, email o UUID"
+              />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 Colaborador
               </span>
               <select
@@ -651,7 +818,7 @@ export function AttendanceConsole({
                 required
               >
                 <option value="">Seleccionar colaborador</option>
-                {employeesForSelectedBranch.map((employee) => (
+                {employeesForSelectedBranchFiltered.map((employee) => (
                   <option key={employee.id} value={employee.id}>
                     {employee.firstName} {employee.lastName}
                   </option>
@@ -755,6 +922,112 @@ export function AttendanceConsole({
                 : 'Registrar marcacion'}
           </button>
         </form>
+      </div>
+
+      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold">Resumen de jornada</p>
+          <p className="text-sm text-muted">
+            Se recalcula con `GET /v1/attendance` sobre la sucursal, colaborador y día del editor.
+          </p>
+        </div>
+
+        {selectedBranchId && selectedEmployeeId ? (
+          <div className="mt-6 grid gap-4">
+            <div className="grid gap-4 lg:grid-cols-4">
+              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                  Día operativo
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {formatDate(eventAtInput)}
+                </p>
+              </div>
+
+              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                  Estado derivado
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {attendanceJourneySummary.currentStatus}
+                </p>
+              </div>
+
+              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                  Primer evento
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {attendanceJourneySummary.firstRecord
+                    ? formatDateTime(attendanceJourneySummary.firstRecord.eventAt)
+                    : 'Sin registros'}
+                </p>
+              </div>
+
+              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                  Último evento
+                </p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {attendanceJourneySummary.lastRecord
+                    ? formatDateTime(attendanceJourneySummary.lastRecord.eventAt)
+                    : 'Sin registros'}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-border/70 bg-panel p-5">
+              <p className="text-sm font-semibold">
+                {employeeNameById.get(selectedEmployeeId) ?? selectedEmployeeId}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {branchNameById.get(selectedBranchId) ?? selectedBranchId}
+              </p>
+              <p className="mt-3 text-sm text-muted">
+                Eventos del día: {attendanceJourneySummary.totalEvents}
+              </p>
+
+              <div className="mt-4 grid gap-3">
+                {attendanceJourneySummary.orderedRecords.length > 0 ? (
+                  attendanceJourneySummary.orderedRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex flex-col gap-2 rounded-[18px] border border-border/70 bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          {record.eventType}
+                        </p>
+                        <p className="text-sm text-muted">
+                          {formatDateTime(record.eventAt)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                        <span className="rounded-full border border-border/70 px-3 py-1">
+                          {record.source}
+                        </span>
+                        {record.notes ? (
+                          <span className="rounded-full border border-border/70 px-3 py-1">
+                            con nota
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted">
+                    No hay eventos para la jornada seleccionada.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-6 text-sm text-muted">
+            Selecciona sucursal, colaborador y fecha en el editor para ver la jornada.
+          </p>
+        )}
       </div>
 
       {(error || success) && (
