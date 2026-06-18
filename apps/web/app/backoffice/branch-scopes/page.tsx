@@ -3,6 +3,15 @@ import { createClient } from '../../../lib/supabase/server';
 import { BranchScopesConsole } from './scopes-console';
 import { SignOutButton } from './sign-out-button';
 
+function getApiBaseUrl() {
+  const value = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!value) {
+    throw new Error('NEXT_PUBLIC_API_URL is not configured');
+  }
+
+  return value.replace(/\/+$/, '');
+}
+
 export default async function BranchScopesPage() {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -13,6 +22,7 @@ export default async function BranchScopesPage() {
 
   const { data: userResult } = await supabase.auth.getUser();
   const currentUserEmail = userResult.user?.email ?? 'unknown-user';
+  const apiBaseUrl = getApiBaseUrl();
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -60,7 +70,10 @@ export default async function BranchScopesPage() {
             </div>
           </div>
 
-          <BranchScopesConsole initialTenantId="almio" />
+          <BranchScopesConsole
+            initialApiBaseUrl={apiBaseUrl}
+            initialTenantId="almio"
+          />
         </div>
       </section>
     </main>

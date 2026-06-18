@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
-import { getPublicApiUrl } from '../../../lib/runtime-env';
 
 type BranchScopeBranch = {
   id: string;
@@ -20,8 +19,6 @@ type BranchScopeResponse = {
   branches: BranchScopeBranch[];
 };
 
-const defaultApiBaseUrl = getPublicApiUrl();
-
 function normalizeApiBaseUrl(value: string) {
   return value.trim().replace(/\/+$/, '');
 }
@@ -34,11 +31,13 @@ function normalizeBranchIds(value: string) {
 }
 
 export function BranchScopesConsole({
+  initialApiBaseUrl,
   initialTenantId,
 }: {
+  initialApiBaseUrl: string;
   initialTenantId: string;
 }) {
-  const [apiBaseUrl, setApiBaseUrl] = useState(defaultApiBaseUrl);
+  const [apiBaseUrl, setApiBaseUrl] = useState(initialApiBaseUrl);
   const [tenantId, setTenantId] = useState(initialTenantId);
   const [accessToken, setAccessToken] = useState('');
   const [membershipId, setMembershipId] = useState('');
