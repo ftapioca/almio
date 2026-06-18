@@ -9,10 +9,11 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 - setup inicial de TailwindCSS
 - backoffice mínimo en `/backoffice/branch-scopes` para consultar y reemplazar `branch_membership_scopes`
 - UI funcional inicial de `attendance` en `/backoffice/attendance`
+- UI funcional inicial de `shifts` en `/backoffice/shifts`
 - auth web real con `Supabase Auth` en `/auth/login`
 - protección server-side del backoffice usando sesión Supabase
 - carga automática del `Bearer token` de sesión dentro de la consola de scopes
-- base lista para continuar UI funcional de `shifts` sin rehacer auth ni wiring de sesión
+- base lista para seguir endureciendo UI funcional de `attendance` y `shifts` sin rehacer auth ni wiring de sesión
 
 ## Objetivos de las siguientes fases
 

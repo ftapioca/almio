@@ -57,8 +57,14 @@ export default function HomePage() {
                 Attendance UI
               </a>
               <a
-                href="/backoffice/branch-scopes"
+                href="/backoffice/shifts"
                 className="inline-flex h-12 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-6 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12"
+              >
+                Shifts UI
+              </a>
+              <a
+                href="/backoffice/branch-scopes"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-border/70 bg-panel px-6 text-sm font-semibold text-foreground transition hover:bg-surface"
               >
                 Scopes Console
               </a>
