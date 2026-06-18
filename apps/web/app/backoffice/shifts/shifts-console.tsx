@@ -52,6 +52,18 @@ type ShiftCommandGuardrail = {
   severity: 'info' | 'warning';
 };
 
+type ShiftAttendanceException = {
+  type:
+    | 'published_without_checkin'
+    | 'completed_without_checkout'
+    | 'assigned_shift_without_attendance'
+    | 'attendance_without_shift';
+  employeeId: string;
+  shiftId?: string;
+  detail: string;
+  severity: 'warning' | 'danger';
+};
+
 const shiftStatusOptions: ShiftStatus[] = [
   'SCHEDULED',
   'PUBLISHED',
@@ -176,6 +188,7 @@ export function ShiftsConsole({
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [coverageDateInput, setCoverageDateInput] = useState(toDatetimeLocalValue());
+  const [coverageAttendanceRecords, setCoverageAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [commandGuardrail, setCommandGuardrail] = useState<ShiftCommandGuardrail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -308,6 +321,84 @@ export function ShiftsConsole({
       ),
     };
   }, [coverageDateInput, filterBranchId, records, selectedBranchId]);
+
+  const coverageBranchId = filterBranchId || selectedBranchId || backoffice.activeBranchId;
+
+  const shiftAttendanceExceptions = useMemo(() => {
+    if (!coverageBranchId) {
+      return [];
+    }
+
+    const attendanceByEmployee = new Map<string, AttendanceRecord[]>();
+    for (const record of coverageAttendanceRecords) {
+      const items = attendanceByEmployee.get(record.employeeId) ?? [];
+      items.push(record);
+      attendanceByEmployee.set(record.employeeId, items);
+    }
+
+    const exceptions: ShiftAttendanceException[] = [];
+    const now = Date.now();
+    const assignedShiftEmployeeIds = new Set<string>();
+
+    for (const shift of coverageSummary.records) {
+      if (!shift.employeeId) {
+        continue;
+      }
+
+      assignedShiftEmployeeIds.add(shift.employeeId);
+      const employeeAttendance = attendanceByEmployee.get(shift.employeeId) ?? [];
+      const attendanceStatus = deriveAttendanceJourneyStatus(employeeAttendance);
+      const hasCheckIn = employeeAttendance.some((record) => record.eventType === 'CHECK_IN');
+      const hasCheckOut = employeeAttendance.some((record) => record.eventType === 'CHECK_OUT');
+
+      if (employeeAttendance.length === 0) {
+        exceptions.push({
+          type: 'assigned_shift_without_attendance',
+          employeeId: shift.employeeId,
+          shiftId: shift.id,
+          severity: 'warning',
+          detail: `Turno ${shift.id} asignado sin eventos attendance para la jornada.`,
+        });
+      }
+
+      if (
+        shift.status === 'PUBLISHED' &&
+        !hasCheckIn &&
+        new Date(shift.startsAt).getTime() <= now
+      ) {
+        exceptions.push({
+          type: 'published_without_checkin',
+          employeeId: shift.employeeId,
+          shiftId: shift.id,
+          severity: 'danger',
+          detail: `Turno ${shift.id} publicado ya inició y aún no registra CHECK_IN.`,
+        });
+      }
+
+      if (shift.status === 'COMPLETED' && (!hasCheckOut || attendanceStatus !== 'Jornada cerrada')) {
+        exceptions.push({
+          type: 'completed_without_checkout',
+          employeeId: shift.employeeId,
+          shiftId: shift.id,
+          severity: 'danger',
+          detail: `Turno ${shift.id} completado sin cierre consistente en attendance.`,
+        });
+      }
+    }
+
+    for (const [employeeId, employeeAttendance] of attendanceByEmployee.entries()) {
+      if (!assignedShiftEmployeeIds.has(employeeId) && employeeAttendance.length > 0) {
+        exceptions.push({
+          type: 'attendance_without_shift',
+          employeeId,
+          severity: 'warning',
+          detail: `Hay actividad attendance para ${employeeId} sin turno asignado en la cobertura del día.`,
+        });
+      }
+    }
+
+    return exceptions;
+  }, [coverageAttendanceRecords, coverageBranchId, coverageSummary.records]);
 
   async function loadReferenceData(currentToken: string) {
     const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
@@ -579,6 +670,47 @@ export function ShiftsConsole({
     const payload = await parseApiResponse(response);
     return payload.data as AttendanceRecord[];
   }
+
+  async function loadCoverageAttendance(currentToken: string) {
+    if (!coverageBranchId) {
+      setCoverageAttendanceRecords([]);
+      return;
+    }
+
+    const { start, end } = getDayBounds(coverageDateInput);
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '200',
+      branchId: coverageBranchId,
+      from: start.toISOString(),
+      to: end.toISOString(),
+    });
+
+    const response = await fetch(
+      `${normalizeApiBaseUrl(apiBaseUrl)}/attendance?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentToken.trim()}`,
+          'X-Tenant-ID': tenantId.trim(),
+        },
+      },
+    );
+
+    const payload = await parseApiResponse(response);
+    setCoverageAttendanceRecords(payload.data as AttendanceRecord[]);
+  }
+
+  useEffect(() => {
+    if (!accessToken.trim() || !tenantId.trim()) {
+      setCoverageAttendanceRecords([]);
+      return;
+    }
+
+    void loadCoverageAttendance(accessToken).catch(() => {
+      setCoverageAttendanceRecords([]);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, tenantId, coverageDateInput, coverageBranchId, apiBaseUrl]);
 
   async function handleCommand(shiftId: string, command: 'publish' | 'cancel' | 'complete') {
     const shift = records.find((record) => record.id === shiftId) ?? null;
@@ -916,6 +1048,37 @@ export function ShiftsConsole({
             ) : (
               <p className="text-sm text-muted">
                 No hay turnos cargados para esa fecha con los filtros actuales.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-border/70 bg-panel p-5">
+          <p className="text-sm font-semibold">Excepciones shift vs attendance</p>
+          <p className="mt-1 text-sm text-muted">
+            Cruce operativo sobre la misma sucursal y jornada de cobertura.
+          </p>
+
+          <div className="mt-4 grid gap-3">
+            {shiftAttendanceExceptions.length > 0 ? (
+              shiftAttendanceExceptions.map((exception, index) => (
+                <div
+                  key={`${exception.type}-${exception.shiftId ?? exception.employeeId}-${index}`}
+                  className={
+                    exception.severity === 'danger'
+                      ? 'rounded-[18px] border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger'
+                      : 'rounded-[18px] border border-brand/30 bg-brand/8 px-4 py-3 text-sm text-brand'
+                  }
+                >
+                  <p className="font-semibold">
+                    {employeeNameById.get(exception.employeeId) ?? exception.employeeId}
+                  </p>
+                  <p className="mt-1">{exception.detail}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted">
+                Sin excepciones mínimas detectadas entre turnos y attendance para esta cobertura.
               </p>
             )}
           </div>
