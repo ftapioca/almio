@@ -37,7 +37,7 @@ El MVP está orientado a restaurantes pequeños y locales de comida rápida, con
 
 ## Estado real del repositorio
 
-La repo ya cerró backend de `Fase 2 - Branches y Employees` y dejó estabilizado el tramo backend de `Fase 3 - Attendance y Shifts`, con auth web real lista para abrir UI funcional.
+La repo ya cerró backend de `Fase 2 - Branches y Employees`, dejó estabilizado el tramo backend de `Fase 3 - Attendance y Shifts` y además cerró un primer bloque formal de `deploy readiness` para `apps/web` y `apps/api`.
 
 Implementado hoy:
 
@@ -87,6 +87,11 @@ Implementado hoy:
   - `x-request-id` por request
   - logs estructurados de request/response con duración, tenant y usuario
   - logs estructurados de excepciones no manejadas
+- deploy readiness validado en Vercel:
+  - `apps/api` desplegada y validada por `health/live` y `health/ready`
+  - `apps/web` desplegada y validada con login real por `Supabase Auth`
+  - `pnpm prisma:migrate:release` ejecutado sobre el entorno actual
+  - backoffice `/backoffice/branch-scopes` operativo en producción
 - cierre explícito de autenticación:
   - el login operativo vive en `Supabase Auth`
   - el backend Almio no expone hoy endpoints propios `login|logout|refresh`
@@ -111,7 +116,7 @@ Implementado hoy:
 Pendiente para próximas fases:
 
 - POS, menú, inventario, pagos y dashboards
-- SAST, observabilidad, backups, runbooks y hardening
+- SAST, observabilidad externa, backups y hardening adicional
 
 ## Próxima sesión recomendada
 
@@ -126,6 +131,10 @@ Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es
 3. después consolidar el shell/backoffice general:
    - navegación operativa
    - capas compartidas de auth, tenant y sucursal activa
+
+Checklist formal del bloque de despliegue:
+
+- [docs/deploy-readiness-checklist.md](/Users/ftapioca/Projects/Almio/almio/docs/deploy-readiness-checklist.md)
 
 ## Cierre de Fase 1
 

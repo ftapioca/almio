@@ -18,7 +18,7 @@ Esta carpeta mantiene la trazabilidad entre los documentos base de Almio y el es
 | SDD | arquitectura, multi-tenancy, RBAC, offline, API, seguridad | `docs/adr/`, `apps/api/src/common/`, `docs/api/` | multi-tenancy y RBAC base operativos |
 | SRS | requerimientos funcionales y no funcionales | `README.md`, `docs/api/`, futuros módulos | RRHH backend cerrado; attendance y shifts con contratos estabilizados |
 | DocAPI | contratos REST, headers, responses y patrones de código | `docs/api/README.md`, `apps/api/src/` | health, admin, RRHH, attendance y shifts documentados y alineados al código |
-| Cronograma | fases, tareas, hitos, entregables y runbooks | `README.md`, `docs/runbooks/`, `docs/adr/` | Fase 2 backend cerrada; Fase 3 backend estabilizada; siguiente bloque: UI funcional |
+| Cronograma | fases, tareas, hitos, entregables y runbooks | `README.md`, `docs/runbooks/`, `docs/adr/`, `docs/deploy-readiness-checklist.md` | Fase 2 backend cerrada; Fase 3 backend estabilizada; deploy readiness web/API cerrado; siguiente bloque: UI funcional |
 
 ## Regla operativa
 
@@ -27,7 +27,8 @@ Cuando el código todavía no implementa una capacidad del baseline, la document
 ## Corte documental vigente
 
 - `docs/phase-3-readiness.md` consolida el cierre backend de `attendance/shifts`, auth web real y el punto exacto desde el que conviene abrir UI funcional.
-- `docs/runbooks/README.md` sigue marcando runbooks como pendientes y no debe adelantarlos como implementados.
+- `docs/deploy-readiness-checklist.md` consolida el cierre formal del bloque de despliegue en Vercel para `apps/web` y `apps/api`.
+- `docs/runbooks/README.md` ya no está vacío: ahora documenta la base mínima de operación de deploy/rollback/smoke checks y setup en Vercel.
 
 ## Próximo foco documental
 
@@ -36,3 +37,4 @@ La documentación debería asumir ahora este orden:
 1. tratar `attendance/shifts` como contratos backend fijados
 2. documentar la UI funcional de asistencia sólo cuando exista código real
 3. mantener `branch_membership_scopes` como capacidad operativa ya disponible por API y backoffice mínimo
+4. usar `docs/deploy-readiness-checklist.md` como referencia de cierre antes de abrir otro bloque de plataforma

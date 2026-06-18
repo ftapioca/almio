@@ -10,6 +10,7 @@ La repo ya cerró la base de `Fase 2`, estabilizó backend de `Fase 3` y habilit
 - [rollback.md](/Users/ftapioca/Projects/Almio/almio/docs/runbooks/rollback.md)
 - [smoke-checks.md](/Users/ftapioca/Projects/Almio/almio/docs/runbooks/smoke-checks.md)
 - [vercel.md](/Users/ftapioca/Projects/Almio/almio/docs/runbooks/vercel.md)
+- [../deploy-readiness-checklist.md](/Users/ftapioca/Projects/Almio/almio/docs/deploy-readiness-checklist.md)
 
 Siguen pendientes los runbooks de operación más profundos y el detalle por proveedor de infraestructura.
 
