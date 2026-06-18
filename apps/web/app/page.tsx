@@ -49,12 +49,20 @@ export default function HomePage() {
               </p>
             </div>
 
-            <a
-              href="/backoffice/branch-scopes"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark"
-            >
-              Abrir Consola
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/backoffice/attendance"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark"
+              >
+                Attendance UI
+              </a>
+              <a
+                href="/backoffice/branch-scopes"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-6 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12"
+              >
+                Scopes Console
+              </a>
+            </div>
           </div>
         </div>
       </section>

@@ -75,6 +75,7 @@ Implementado hoy:
   - `POST /v1/shifts/:id/complete`
 - scaffold Next.js 15 para portal SaaS / futura PWA
 - backoffice web mínimo para `branch_membership_scopes` en `/backoffice/branch-scopes`
+- UI funcional inicial de `attendance` en `/backoffice/attendance`
 - auth web real con `Supabase Auth` para proteger el backoffice en `/auth/login`
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
@@ -122,10 +123,10 @@ Pendiente para próximas fases:
 
 Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
 
-1. abrir UI funcional de `attendance` usando el contrato ya fijado:
-   - respetar `Idempotency-Key`
+1. seguir endureciendo la UI funcional inicial de `attendance`:
+   - mantener `Idempotency-Key`
    - no reabrir decisiones de secuencia ni estados
-2. seguir con UI funcional de `shifts`:
+2. continuar con UI funcional de `shifts`:
    - usar comandos explícitos `publish`, `cancel` y `complete`
    - mantener fuera de la UI cualquier cambio directo de `status`
 3. después consolidar el shell/backoffice general:
