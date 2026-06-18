@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath =
     typeof nextPathValue === 'string' && nextPathValue.startsWith('/')
       ? nextPathValue
-      : '/backoffice/branch-scopes';
+      : '/backoffice';
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();

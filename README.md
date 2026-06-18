@@ -74,6 +74,7 @@ Implementado hoy:
   - `POST /v1/shifts/:id/cancel`
   - `POST /v1/shifts/:id/complete`
 - scaffold Next.js 15 para portal SaaS / futura PWA
+- shell compartido de backoffice para `attendance`, `shifts` y `branch-scopes`
 - backoffice web mínimo para `branch_membership_scopes` en `/backoffice/branch-scopes`
 - UI funcional inicial de `attendance` en `/backoffice/attendance`
 - UI funcional inicial de `shifts` en `/backoffice/shifts`
