@@ -36,6 +36,12 @@ La suite valida:
 - `health/live` y `health/ready`
 - login real contra `Supabase Auth`
 - probes autenticados a `me`, `branches`, `employees`, `attendance` y `shifts`
+- probes funcionales read-only sobre `attendance`:
+  - `GET /attendance/:id`
+  - listado filtrado por sucursal, colaborador y día
+- probes funcionales read-only sobre `shifts`:
+  - `GET /shifts/:id`
+  - listado filtrado por sucursal, colaborador/estado y día
 - probe opcional a `admin/branch-membership-scopes`
 
 ## GitHub Actions

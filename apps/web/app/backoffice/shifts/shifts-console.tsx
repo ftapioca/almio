@@ -35,6 +35,23 @@ type ShiftRecord = {
   updatedAt: string;
 };
 
+type AttendanceRecord = {
+  id: string;
+  branchId: string;
+  employeeId: string;
+  eventType: 'CHECK_IN' | 'CHECK_OUT' | 'BREAK_START' | 'BREAK_END';
+  eventAt: string;
+  source: 'MANUAL' | 'DEVICE' | 'IMPORT';
+  notes: string | null;
+};
+
+type ShiftCommandGuardrail = {
+  command: 'publish' | 'cancel' | 'complete';
+  shiftId: string;
+  detail: string;
+  severity: 'info' | 'warning';
+};
+
 const shiftStatusOptions: ShiftStatus[] = [
   'SCHEDULED',
   'PUBLISHED',
@@ -74,6 +91,30 @@ function getDayBounds(value: string) {
   end.setHours(23, 59, 59, 999);
 
   return { start, end };
+}
+
+function deriveAttendanceJourneyStatus(records: AttendanceRecord[]) {
+  const ordered = [...records].sort(
+    (left, right) => new Date(left.eventAt).getTime() - new Date(right.eventAt).getTime(),
+  );
+  const lastRecord = ordered.at(-1);
+
+  if (!lastRecord) {
+    return 'Sin actividad';
+  }
+
+  switch (lastRecord.eventType) {
+    case 'CHECK_IN':
+      return 'En jornada';
+    case 'BREAK_START':
+      return 'En colación/pausa';
+    case 'BREAK_END':
+      return 'De vuelta de pausa';
+    case 'CHECK_OUT':
+      return 'Jornada cerrada';
+    default:
+      return 'Estado no derivado';
+  }
 }
 
 async function parseApiResponse(response: Response) {
@@ -135,6 +176,7 @@ export function ShiftsConsole({
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [coverageDateInput, setCoverageDateInput] = useState(toDatetimeLocalValue());
+  const [commandGuardrail, setCommandGuardrail] = useState<ShiftCommandGuardrail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -506,10 +548,105 @@ export function ShiftsConsole({
     }
   }
 
+  async function loadAttendanceForShiftDay(
+    currentToken: string,
+    shift: ShiftRecord,
+  ): Promise<AttendanceRecord[]> {
+    if (!shift.employeeId) {
+      return [];
+    }
+
+    const { start, end } = getDayBounds(shift.startsAt);
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '100',
+      branchId: shift.branchId,
+      employeeId: shift.employeeId,
+      from: start.toISOString(),
+      to: end.toISOString(),
+    });
+
+    const response = await fetch(
+      `${normalizeApiBaseUrl(apiBaseUrl)}/attendance?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentToken.trim()}`,
+          'X-Tenant-ID': tenantId.trim(),
+        },
+      },
+    );
+
+    const payload = await parseApiResponse(response);
+    return payload.data as AttendanceRecord[];
+  }
+
   async function handleCommand(shiftId: string, command: 'publish' | 'cancel' | 'complete') {
-    setIsLoading(true);
+    const shift = records.find((record) => record.id === shiftId) ?? null;
+
+    if (!shift) {
+      setError('No fue posible encontrar el turno a operar');
+      return;
+    }
+
+    setCommandGuardrail(null);
     setError(null);
     setSuccess(null);
+
+    if ((command === 'publish' || command === 'complete') && !shift.employeeId) {
+      setError(`El comando ${command} requiere colaborador asignado`);
+      return;
+    }
+
+    if ((command === 'publish' || command === 'complete') && shift.employeeId) {
+      try {
+        const dayRecords = await loadAttendanceForShiftDay(accessToken, shift);
+        const orderedRecords = [...dayRecords].sort(
+          (left, right) =>
+            new Date(left.eventAt).getTime() - new Date(right.eventAt).getTime(),
+        );
+        const currentStatus = deriveAttendanceJourneyStatus(orderedRecords);
+        const hasCheckIn = orderedRecords.some((record) => record.eventType === 'CHECK_IN');
+        const hasCheckOut = orderedRecords.some((record) => record.eventType === 'CHECK_OUT');
+
+        if (command === 'complete') {
+          if (!hasCheckIn) {
+            setError(
+              'No se puede completar el turno: no existe CHECK_IN para el colaborador en esa jornada',
+            );
+            return;
+          }
+
+          if (!hasCheckOut || currentStatus !== 'Jornada cerrada') {
+            setError(
+              'No se puede completar el turno: attendance aún no muestra una jornada cerrada con CHECK_OUT',
+            );
+            return;
+          }
+        }
+
+        setCommandGuardrail({
+          command,
+          shiftId,
+          severity:
+            command === 'publish' && orderedRecords.length === 0 ? 'warning' : 'info',
+          detail:
+            command === 'publish'
+              ? orderedRecords.length === 0
+                ? 'Precheck attendance: sin eventos del día para este colaborador. Se permite publicar, pero conviene validar planificación vs operación real.'
+                : `Precheck attendance: ${orderedRecords.length} evento(s) del día, estado actual "${currentStatus}".`
+              : `Precheck attendance: jornada cerrada con ${orderedRecords.length} evento(s).`,
+        });
+      } catch (requestError) {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : `Error inesperado al validar attendance previo a ${command}`,
+        );
+        return;
+      }
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch(
@@ -975,6 +1112,18 @@ export function ShiftsConsole({
           ) : null}
         </div>
       )}
+
+      {commandGuardrail ? (
+        <div
+          className={
+            commandGuardrail.severity === 'warning'
+              ? 'rounded-[20px] border border-brand/30 bg-brand/8 p-4 text-sm text-brand'
+              : 'rounded-[20px] border border-border/70 bg-panel p-4 text-sm text-muted'
+          }
+        >
+          {commandGuardrail.detail}
+        </div>
+      ) : null}
 
       <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
         <div className="flex flex-col gap-2">

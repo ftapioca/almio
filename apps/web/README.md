@@ -13,10 +13,13 @@ Scaffold Next.js 15 del portal SaaS y futura PWA `offline-first`.
 - backoffice mínimo en `/backoffice/branch-scopes` para consultar y reemplazar `branch_membership_scopes`
 - UI funcional inicial de `attendance` en `/backoffice/attendance`
 - UI funcional inicial de `shifts` en `/backoffice/shifts`
+- resumen diario operativo de `attendance` por colaborador/jornada
+- cobertura diaria, alertas mínimas y prechecks operativos en `shifts`
 - auth web real con `Supabase Auth` en `/auth/login`
 - protección server-side del backoffice usando sesión Supabase
 - carga automática del `Bearer token` de sesión dentro de la consola de scopes
 - smoke suite automatizado de backoffice disponible vía `pnpm prisma:backoffice-smoke-check`
+- dashboard home con KPIs operativos mínimos de hoy para `attendance` y `shifts`
 - base lista para seguir endureciendo UI funcional de `attendance` y `shifts` sin rehacer auth ni wiring de sesión
 
 ## Objetivos de las siguientes fases
