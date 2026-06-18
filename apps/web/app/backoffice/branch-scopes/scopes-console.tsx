@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
+import { getPublicApiUrl } from '../../../lib/runtime-env';
 
 type BranchScopeBranch = {
   id: string;
@@ -19,8 +20,7 @@ type BranchScopeResponse = {
   branches: BranchScopeBranch[];
 };
 
-const defaultApiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
+const defaultApiBaseUrl = getPublicApiUrl();
 
 function normalizeApiBaseUrl(value: string) {
   return value.trim().replace(/\/+$/, '');

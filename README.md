@@ -79,6 +79,14 @@ Implementado hoy:
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
 - workflow de CI para `lint`, `typecheck`, `test` y `build`
+- runtime config inicial para despliegue:
+  - `API_PORT` real en bootstrap de API
+  - `API_CORS_ALLOWED_ORIGINS` para clientes web autorizados
+  - `NEXT_PUBLIC_API_URL` obligatoria en web, sin fallback implícito a localhost
+- observabilidad mínima inicial en API:
+  - `x-request-id` por request
+  - logs estructurados de request/response con duración, tenant y usuario
+  - logs estructurados de excepciones no manejadas
 - cierre explícito de autenticación:
   - el login operativo vive en `Supabase Auth`
   - el backend Almio no expone hoy endpoints propios `login|logout|refresh`

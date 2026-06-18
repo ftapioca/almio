@@ -21,6 +21,7 @@ El schema actual cubre el `schema public` descrito en SDD/SRS:
 - `pnpm prisma:generate`
 - `pnpm prisma:migrate:deploy`
 - `pnpm prisma:migrate:tenants`
+- `pnpm prisma:migrate:release`
 - `pnpm prisma:upsert-company-membership`
 - `pnpm prisma:provision-supabase-auth-user`
 - `pnpm prisma:assign-branch-scopes`
@@ -74,6 +75,27 @@ Objetivo actual del baseline tenant:
 Comando para aplicar el baseline a tenants ya existentes:
 
 - `pnpm prisma:migrate:tenants`
+
+Comando recomendado para release operativo:
+
+- `pnpm prisma:migrate:release`
+
+Secuencia actual del comando de release:
+
+1. ejecutar `prisma migrate deploy` sobre `schema public`
+2. cargar empresas activas desde `public.companies`
+3. aplicar tenant migrations sobre cada `schema tenant_*`
+4. cortar con error en el primer fallo
+
+Filtro opcional para despliegues controlados:
+
+- `TENANT_MIGRATION_COMPANY_SLUGS=almio,beta pnpm prisma:migrate:release`
+
+Uso recomendado:
+
+- staging o producción después de desplegar la nueva versión de API
+- antes de smoke tests autenticados
+- no reemplaza backups ni rollback; sólo estandariza el orden de migración
 
 ## Seed inicial
 
@@ -155,6 +177,7 @@ Esto ya fue ejecutado sobre `almio` con `branch-admin@almio.cl`.
 ## Nota para la siguiente sesión
 
 - `prisma migrate deploy` ya está estabilizado usando el pooler `session mode` en `DIRECT_URL`
+- `pnpm prisma:migrate:release` deja fijo el orden `public -> tenants` para deploy
 - la asignación inicial de scopes puede seguir haciéndose por script, pero la operación normal ya puede moverse a `GET|PUT /v1/admin/branch-membership-scopes`
 - si se rota `SUPABASE_SERVICE_ROLE_KEY`, hay que actualizar el `.env` antes de volver a usar los scripts de provisión o prueba real
 

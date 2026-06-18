@@ -46,6 +46,8 @@ Respuesta de error estándar:
 Implementado hoy:
 
 - `GET /v1/health`
+- `GET /v1/health/live`
+- `GET /v1/health/ready`
 - `GET /v1/me`
 - `GET /v1/me/owner`
 - `GET /v1/admin/companies`
@@ -108,7 +110,7 @@ Implicancias:
 
 Uso:
 
-- healthcheck básico del backend
+- liveness básica del backend
 - no requiere `Authorization`
 - no requiere `X-Tenant-ID`
 
@@ -120,6 +122,75 @@ Respuesta actual:
   "data": {
     "service": "almio-api",
     "status": "ok"
+  }
+}
+```
+
+### `GET /v1/health/live`
+
+Uso:
+
+- probe de liveness para proceso HTTP
+- no requiere `Authorization`
+- no requiere `X-Tenant-ID`
+
+Respuesta actual:
+
+```json
+{
+  "success": true,
+  "data": {
+    "service": "almio-api",
+    "status": "ok"
+  }
+}
+```
+
+### `GET /v1/health/ready`
+
+Uso:
+
+- probe de readiness para despliegue
+- verifica disponibilidad de la base de datos vía Prisma
+- no requiere `Authorization`
+- no requiere `X-Tenant-ID`
+
+Respuesta actual cuando la API está lista:
+
+```json
+{
+  "success": true,
+  "data": {
+    "service": "almio-api",
+    "status": "ready",
+    "checks": {
+      "database": {
+        "status": "up",
+        "latencyMs": 8
+      }
+    }
+  }
+}
+```
+
+Respuesta actual cuando la API no está lista:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SERVICE_NOT_READY",
+    "message": "Service dependencies are not ready",
+    "details": {
+      "service": "almio-api",
+      "status": "not_ready",
+      "checks": {
+        "database": {
+          "status": "down",
+          "latencyMs": 120
+        }
+      }
+    }
   }
 }
 ```
