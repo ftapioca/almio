@@ -3,14 +3,16 @@ import { getBackofficePageContext } from '../lib/get-backoffice-page-context';
 import { ShiftsConsole } from './shifts-console';
 
 export default async function ShiftsPage() {
-  const { apiBaseUrl, currentUserEmail } = await getBackofficePageContext(
+  const { apiBaseUrl, currentUserEmail, tenantId } = await getBackofficePageContext(
     '/backoffice/shifts',
   );
 
   return (
     <BackofficeShell
       activeSection="shifts"
+      apiBaseUrl={apiBaseUrl}
       currentUserEmail={currentUserEmail}
+      tenantId={tenantId}
       title="Turnos operativos sobre el contrato real de shifts."
       description="Esta pantalla consume `GET|POST|PATCH /v1/shifts` y los comandos `publish`, `cancel` y `complete` sin relajar la máquina de estados del backend."
       highlightCards={[
@@ -24,7 +26,7 @@ export default async function ShiftsPage() {
         },
       ]}
     >
-      <ShiftsConsole initialApiBaseUrl={apiBaseUrl} initialTenantId="almio" />
+      <ShiftsConsole initialApiBaseUrl={apiBaseUrl} initialTenantId={tenantId} />
     </BackofficeShell>
   );
 }

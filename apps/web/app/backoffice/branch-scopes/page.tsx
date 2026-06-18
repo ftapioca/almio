@@ -3,14 +3,16 @@ import { getBackofficePageContext } from '../lib/get-backoffice-page-context';
 import { BranchScopesConsole } from './scopes-console';
 
 export default async function BranchScopesPage() {
-  const { apiBaseUrl, currentUserEmail } = await getBackofficePageContext(
+  const { apiBaseUrl, currentUserEmail, tenantId } = await getBackofficePageContext(
     '/backoffice/branch-scopes',
   );
 
   return (
     <BackofficeShell
       activeSection="branch-scopes"
+      apiBaseUrl={apiBaseUrl}
       currentUserEmail={currentUserEmail}
+      tenantId={tenantId}
       title="Administracion de scopes por sucursal."
       description="Esta consola usa `GET|PUT /v1/admin/branch-membership-scopes` para operar `BRANCH_ADMIN` sin depender de scripts. Se mantiene manual a proposito hasta cerrar auth web y shell SaaS."
       highlightCards={[
@@ -24,7 +26,7 @@ export default async function BranchScopesPage() {
         },
       ]}
     >
-      <BranchScopesConsole initialApiBaseUrl={apiBaseUrl} initialTenantId="almio" />
+      <BranchScopesConsole initialApiBaseUrl={apiBaseUrl} initialTenantId={tenantId} />
     </BackofficeShell>
   );
 }

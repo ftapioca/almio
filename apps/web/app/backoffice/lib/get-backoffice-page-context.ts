@@ -15,5 +15,6 @@ export async function getBackofficePageContext(nextPath: string) {
   return {
     apiBaseUrl: getApiBaseUrl(),
     currentUserEmail: userResult.user?.email ?? 'unknown-user',
+    tenantId: 'almio',
   };
 }

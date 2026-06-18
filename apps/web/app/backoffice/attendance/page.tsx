@@ -3,14 +3,16 @@ import { getBackofficePageContext } from '../lib/get-backoffice-page-context';
 import { AttendanceConsole } from './attendance-console';
 
 export default async function AttendancePage() {
-  const { apiBaseUrl, currentUserEmail } = await getBackofficePageContext(
+  const { apiBaseUrl, currentUserEmail, tenantId } = await getBackofficePageContext(
     '/backoffice/attendance',
   );
 
   return (
     <BackofficeShell
       activeSection="attendance"
+      apiBaseUrl={apiBaseUrl}
       currentUserEmail={currentUserEmail}
+      tenantId={tenantId}
       title="Marcaciones operativas sobre el contrato real de attendance."
       description="Esta pantalla consume `GET|POST /v1/attendance` sin relajar la secuencia de eventos ni la idempotencia. La UI genera un `Idempotency-Key` nuevo por envio y refresca el listado despues de cada marcacion."
       highlightCards={[
@@ -24,7 +26,7 @@ export default async function AttendancePage() {
         },
       ]}
     >
-      <AttendanceConsole initialApiBaseUrl={apiBaseUrl} initialTenantId="almio" />
+      <AttendanceConsole initialApiBaseUrl={apiBaseUrl} initialTenantId={tenantId} />
     </BackofficeShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createClient } from '../../../lib/supabase/client';
+import { useBackofficeContext } from '../_components/backoffice-client-context';
 
 type Branch = {
   id: string;
@@ -76,6 +77,7 @@ export function AttendanceConsole({
   initialApiBaseUrl: string;
   initialTenantId: string;
 }) {
+  const backoffice = useBackofficeContext();
   const [apiBaseUrl, setApiBaseUrl] = useState(initialApiBaseUrl);
   const [tenantId, setTenantId] = useState(initialTenantId);
   const [accessToken, setAccessToken] = useState('');
@@ -116,6 +118,25 @@ export function AttendanceConsole({
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    setTenantId(backoffice.tenantId);
+  }, [backoffice.tenantId]);
+
+  useEffect(() => {
+    if (backoffice.accessToken.trim()) {
+      setAccessToken(backoffice.accessToken);
+    }
+  }, [backoffice.accessToken]);
+
+  useEffect(() => {
+    if (!filterBranchId && backoffice.activeBranchId) {
+      setFilterBranchId(backoffice.activeBranchId);
+    }
+    if (!selectedBranchId && backoffice.activeBranchId) {
+      setSelectedBranchId(backoffice.activeBranchId);
+    }
+  }, [backoffice.activeBranchId, filterBranchId, selectedBranchId]);
 
   const branchNameById = useMemo(
     () =>
@@ -341,6 +362,7 @@ export function AttendanceConsole({
                 value={filterBranchId}
                 onChange={(event) => {
                   setFilterBranchId(event.target.value);
+                  backoffice.setActiveBranchId(event.target.value);
                   setFilterEmployeeId('');
                 }}
               >
@@ -421,6 +443,7 @@ export function AttendanceConsole({
                 value={selectedBranchId}
                 onChange={(event) => {
                   setSelectedBranchId(event.target.value);
+                  backoffice.setActiveBranchId(event.target.value);
                   setSelectedEmployeeId('');
                 }}
                 required
