@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
+import { Badge, Card, CardDescription, CardHeader, CardTitle, buttonVariants } from '@almio/design-system';
 import { SignOutButton } from '../branch-scopes/sign-out-button';
 import { BackofficeClientContextProvider } from './backoffice-client-context';
 import { BackofficeContextPanel } from './backoffice-context-panel';
@@ -55,14 +56,14 @@ export function BackofficeShell({
   return (
     <BackofficeClientContextProvider apiBaseUrl={apiBaseUrl} initialTenantId={tenantId}>
       <main className="min-h-screen bg-background text-foreground">
-        <section className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-6 py-10">
+        <section className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-8 px-6 py-10">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_1.45fr]">
-            <aside className="rounded-[30px] border border-border/70 bg-ink p-8 text-white shadow-card">
+            <aside className="rounded-2xl border border-sidebar-border bg-sidebar p-8 text-sidebar-foreground shadow-elevation-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sand">
+                  <Badge variant="info" className="bg-primary-100 text-primary-700">
                     Almio Backoffice
-                  </p>
+                  </Badge>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {navItems.map((item) => {
                       const isActive = item.key === activeSection;
@@ -71,11 +72,13 @@ export function BackofficeShell({
                         <Link
                           key={item.key}
                           href={item.href}
-                          className={
-                            isActive
-                              ? 'inline-flex h-9 items-center justify-center rounded-full bg-white/14 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-sand'
-                              : 'inline-flex h-9 items-center justify-center rounded-full border border-white/16 bg-white/8 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/78 transition hover:bg-white/12'
-                          }
+                          className={buttonVariants({
+                            size: 'sm',
+                            variant: isActive ? 'default' : 'outline',
+                            className: isActive
+                              ? 'bg-primary text-white hover:bg-primary-600'
+                              : 'border-white/16 bg-white/8 text-white hover:bg-white/12 hover:text-white',
+                          })}
                         >
                           {item.label}
                         </Link>
@@ -87,29 +90,37 @@ export function BackofficeShell({
                 <SignOutButton />
               </div>
 
-              <h1 className="mt-6 text-4xl font-semibold leading-tight">{title}</h1>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-white/76">
+              <h1 className="mt-6 text-h3 text-white">{title}</h1>
+              <p className="mt-4 max-w-xl text-body-sm leading-7 text-white/76">
                 {description}
               </p>
 
               <div className="mt-8 grid gap-4">
                 {highlightCards.map((card) => (
-                  <div
+                  <Card
                     key={card.title}
-                    className="rounded-[24px] border border-white/12 bg-white/6 p-5"
+                    className="border-white/12 bg-white/6 text-white shadow-none"
                   >
-                    <p className="text-sm font-semibold text-sand">{card.title}</p>
-                    <p className="mt-2 text-sm leading-6 text-white/72">{card.body}</p>
-                  </div>
+                    <CardHeader className="p-5">
+                      <CardTitle className="text-body font-semibold text-white">{card.title}</CardTitle>
+                      <CardDescription className="text-body-sm leading-6 text-white/72">
+                        {card.body}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
                 ))}
               </div>
 
-              <div className="mt-8 rounded-[24px] border border-white/12 bg-white/6 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sand">
-                  Sesion activa
-                </p>
-                <p className="mt-2 break-all text-sm text-white/78">{currentUserEmail}</p>
-              </div>
+              <Card className="mt-8 border-white/12 bg-white/6 text-white shadow-none">
+                <CardHeader className="p-5">
+                  <CardDescription className="text-caption font-semibold uppercase tracking-[0.18em] text-primary-100">
+                    Sesión activa
+                  </CardDescription>
+                  <CardTitle className="break-all text-body-sm font-medium text-white/78">
+                    {currentUserEmail}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
             </aside>
 
             <div>

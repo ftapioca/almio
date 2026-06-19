@@ -1,27 +1,25 @@
 import type { Config } from 'tailwindcss';
+import almioPreset from '@almio/design-system/tailwind-preset';
 
 const config: Config = {
+  presets: [almioPreset],
   content: [
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
+    '../../packages/design-system/src/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {
       colors: {
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        muted: 'var(--muted)',
-        brand: 'var(--brand)',
-        'brand-dark': 'var(--brand-dark)',
-        surface: 'var(--surface)',
-        panel: 'var(--panel)',
-        border: 'var(--border)',
-        ink: 'var(--ink)',
-        sand: 'var(--sand)',
-        danger: 'var(--danger)',
+        brand: 'hsl(var(--primary))',
+        'brand-dark': '#1D4ED8',
+        surface: 'hsl(var(--card))',
+        panel: 'hsl(var(--muted))',
+        ink: 'hsl(var(--almio-sidebar))',
+        sand: '#DBEAFE',
       },
       boxShadow: {
-        card: '0 20px 60px rgba(53, 40, 20, 0.12)',
+        card: '0 12px 32px rgba(0,0,0,0.18)',
       },
     },
   },

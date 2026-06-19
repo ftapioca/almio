@@ -2,6 +2,13 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Input,
+  Label,
+} from '@almio/design-system';
 import { createClient } from '../../../lib/supabase/client';
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
@@ -35,11 +42,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   return (
     <form className="grid gap-5" onSubmit={handleSubmit}>
       <label className="grid gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-          Email
-        </span>
-        <input
-          className="field-input"
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
@@ -50,11 +55,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       </label>
 
       <label className="grid gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-          Password
-        </span>
-        <input
-          className="field-input"
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -65,18 +68,14 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       </label>
 
       {error ? (
-        <div className="rounded-[18px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-          {error}
-        </div>
+        <Alert variant="danger">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <button
-        type="submit"
-        className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={isLoading}
-      >
+      <Button type="submit" size="lg" loading={isLoading} disabled={isLoading}>
         {isLoading ? 'Ingresando...' : 'Iniciar Sesion'}
-      </button>
+      </Button>
     </form>
   );
 }

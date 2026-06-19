@@ -1,5 +1,6 @@
 'use client';
 
+import { Alert, AlertDescription, Card, CardContent, Input, Label } from '@almio/design-system';
 import { useBackofficeContext } from './backoffice-client-context';
 
 export function BackofficeContextPanel() {
@@ -20,34 +21,33 @@ export function BackofficeContextPanel() {
       : branches;
 
   return (
-    <div className="mb-6 rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
+    <Card className="mb-6 shadow-elevation-2">
+      <CardContent className="p-6">
       <div className="grid gap-4 xl:grid-cols-[1.1fr_1.2fr_1fr]">
-        <div className="rounded-[20px] border border-border/70 bg-panel p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <p className="text-caption font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Tenant activo
           </p>
-          <p className="mt-3 text-sm font-medium text-foreground">{tenantId}</p>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-3 text-body-sm font-medium text-foreground">{tenantId}</p>
+          <p className="mt-2 text-body-sm text-muted-foreground">
             {me?.tenant?.schemaName ?? 'Cargando schema tenant...'}
           </p>
         </div>
 
-        <div className="rounded-[20px] border border-border/70 bg-panel p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        <div className="rounded-xl border border-border bg-muted p-4">
+          <p className="text-caption font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Contexto de acceso
           </p>
-          <p className="mt-3 text-sm font-medium text-foreground">
+          <p className="mt-3 text-body-sm font-medium text-foreground">
             {me?.user?.roles.join(', ') || 'Sin roles cargados'}
           </p>
-          <p className="mt-2 break-all text-sm text-muted">
+          <p className="mt-2 break-all text-body-sm text-muted-foreground">
             membership: {me?.user?.membershipId ?? 'n/a'}
           </p>
         </div>
 
-        <label className="grid gap-2 rounded-[20px] border border-border/70 bg-panel p-4">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Sucursal activa
-          </span>
+        <label className="grid gap-2 rounded-xl border border-border bg-muted p-4">
+          <Label>Sucursal activa</Label>
           <select
             className="field-input"
             value={activeBranchId}
@@ -61,7 +61,7 @@ export function BackofficeContextPanel() {
               </option>
             ))}
           </select>
-          <p className="text-sm text-muted">
+          <p className="text-body-sm text-muted-foreground">
             {scopedBranchIds.length > 0
               ? `Scope efectivo: ${scopedBranchIds.length} sucursal(es)`
               : 'Sin restricción por scope en esta sesión'}
@@ -70,10 +70,11 @@ export function BackofficeContextPanel() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-          {error}
-        </div>
+        <Alert variant="danger" className="mt-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

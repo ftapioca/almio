@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { Alert, AlertDescription, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, buttonVariants } from '@almio/design-system';
 import { useBackofficeContext } from './backoffice-client-context';
 
 type AttendanceRecord = {
@@ -215,21 +216,19 @@ export function BackofficeHome() {
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-            Inicio operativo
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold leading-tight text-foreground">
+      <Card className="shadow-elevation-2">
+        <CardHeader className="max-w-3xl p-6">
+          <Badge variant="info" className="w-fit">Inicio operativo</Badge>
+          <CardTitle className="mt-3 text-h4">
             Entrada única al backoffice funcional actual.
-          </h2>
-          <p className="mt-4 text-sm leading-7 text-muted">
+          </CardTitle>
+          <CardDescription className="mt-2 text-body-sm leading-7">
             Este panel ya comparte sesión, tenant y sucursal activa. Sirve como
             punto base para operar mientras el design system definitivo sigue en
             construcción.
-          </p>
-        </div>
-      </div>
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <StatCard
@@ -249,83 +248,89 @@ export function BackofficeHome() {
         />
       </div>
 
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Indicadores operativos de hoy</p>
-          <p className="text-sm text-muted">
+      <Card className="shadow-elevation-2">
+        <CardHeader className="p-6">
+          <CardTitle className="text-body font-semibold">Indicadores operativos de hoy</CardTitle>
+          <CardDescription className="text-body-sm">
             Métricas mínimas derivadas de `attendance` y `shifts` para la sucursal activa.
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-4">
-          <StatCard
-            label="Eventos attendance"
-            value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.attendanceEvents)}
-            detail="Marcaciones del día en el alcance actual"
-          />
-          <StatCard
-            label="Jornadas abiertas"
-            value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.openJourneys)}
-            detail="Colaboradores cuyo último evento no es CHECK_OUT"
-          />
-          <StatCard
-            label="Turnos publicados"
-            value={
-              isMetricsLoading
-                ? 'Cargando...'
-                : `${operationalMetrics.shiftsPublished} / ${operationalMetrics.shiftsTotal}`
-            }
-            detail="Publicados sobre total de turnos del día"
-          />
-          <StatCard
-            label="Turnos sin asignar"
-            value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.unassignedShifts)}
-            detail="Riesgo operativo inmediato"
-          />
-        </div>
-
-        {metricsError ? (
-          <div className="mt-4 rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-            {metricsError}
+        <CardContent className="px-6 pb-6 pt-0">
+          <div className="grid gap-4 xl:grid-cols-4">
+            <StatCard
+              label="Eventos attendance"
+              value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.attendanceEvents)}
+              detail="Marcaciones del día en el alcance actual"
+            />
+            <StatCard
+              label="Jornadas abiertas"
+              value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.openJourneys)}
+              detail="Colaboradores cuyo último evento no es CHECK_OUT"
+            />
+            <StatCard
+              label="Turnos publicados"
+              value={
+                isMetricsLoading
+                  ? 'Cargando...'
+                  : `${operationalMetrics.shiftsPublished} / ${operationalMetrics.shiftsTotal}`
+              }
+              detail="Publicados sobre total de turnos del día"
+            />
+            <StatCard
+              label="Turnos sin asignar"
+              value={isMetricsLoading ? 'Cargando...' : String(operationalMetrics.unassignedShifts)}
+              detail="Riesgo operativo inmediato"
+            />
           </div>
-        ) : null}
 
-        <div className="mt-4 rounded-[24px] border border-border/70 bg-panel p-5">
-          <p className="text-sm font-semibold">Alertas rápidas</p>
-          <div className="mt-3 grid gap-3">
-            {operationalAlerts.length > 0 ? (
-              operationalAlerts.map((alert) => (
-                <div
-                  key={alert}
-                  className="rounded-[18px] border border-border/70 bg-surface px-4 py-3 text-sm text-muted"
-                >
-                  {alert}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted">
-                Sin alertas mínimas para hoy en el alcance actual.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+          {metricsError ? (
+            <Alert variant="danger" className="mt-4">
+              <AlertDescription>{metricsError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <Card className="mt-4 bg-muted shadow-none">
+            <CardHeader className="p-5">
+              <CardTitle className="text-body font-semibold">Alertas rápidas</CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0">
+              <div className="mt-3 grid gap-3">
+                {operationalAlerts.length > 0 ? (
+                  operationalAlerts.map((alert) => (
+                    <div
+                      key={alert}
+                      className="rounded-xl border border-border bg-background px-4 py-3 text-body-sm text-muted-foreground"
+                    >
+                      {alert}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-body-sm text-muted-foreground">
+                    Sin alertas mínimas para hoy en el alcance actual.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-3">
         {modules.map((module) => (
-          <div
-            key={module.href}
-            className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur"
-          >
-            <p className="text-sm font-semibold text-foreground">{module.label}</p>
-            <p className="mt-3 text-sm leading-6 text-muted">{module.description}</p>
-            <Link
-              href={module.href}
-              className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand-dark"
-            >
-              Abrir módulo
-            </Link>
-          </div>
+          <Card key={module.href} className="shadow-elevation-2">
+            <CardHeader className="p-6">
+              <CardTitle className="text-body font-semibold">{module.label}</CardTitle>
+              <CardDescription className="mt-1 text-body-sm leading-6">
+                {module.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-6 pb-6 pt-0">
+              <Link href={module.href} className={buttonVariants({})}>
+                Abrir módulo
+              </Link>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
@@ -342,12 +347,14 @@ function StatCard({
   detail: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-border/70 bg-panel p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        {label}
-      </p>
-      <p className="mt-3 text-sm font-medium text-foreground">{value}</p>
-      <p className="mt-2 text-sm text-muted">{detail}</p>
-    </div>
+    <Card className="bg-muted shadow-none">
+      <CardContent className="p-5">
+        <p className="text-caption font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-3 text-body-sm font-medium text-foreground">{value}</p>
+        <p className="mt-2 text-body-sm text-muted-foreground">{detail}</p>
+      </CardContent>
+    </Card>
   );
 }

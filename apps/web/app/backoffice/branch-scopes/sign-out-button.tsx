@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { Button } from '@almio/design-system';
 import { createClient } from '../../../lib/supabase/client';
 
 export function SignOutButton() {
@@ -14,12 +15,8 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleSignOut}
-      className="inline-flex h-10 items-center justify-center rounded-full border border-white/16 bg-white/8 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/12"
-    >
+    <Button type="button" onClick={handleSignOut} variant="outline" className="border-white/16 bg-white/8 text-white hover:bg-white/12 hover:text-white">
       Cerrar Sesion
-    </button>
+    </Button>
   );
 }
