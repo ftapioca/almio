@@ -1,6 +1,20 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Textarea,
+} from '@almio/design-system';
 import { createClient } from '../../../lib/supabase/client';
 
 type BranchScopeBranch = {
@@ -145,119 +159,133 @@ export function BranchScopesConsole({
   }
 
   return (
-    <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-      <form className="grid gap-6" onSubmit={readScopes}>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              API Base URL
-            </span>
-            <input
-              className="field-input"
-              value={apiBaseUrl}
-              onChange={(event) => setApiBaseUrl(event.target.value)}
-              placeholder="http://localhost:3001/v1"
-            />
-          </label>
+    <div className="grid gap-6">
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader>
+          <CardTitle>Branch Scopes Console</CardTitle>
+          <CardDescription>
+            Consulta y reemplaza los branch scopes de una membership usando el contrato
+            admin actual.
+          </CardDescription>
+        </CardHeader>
 
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Tenant
-            </span>
-            <input
-              className="field-input"
-              value={tenantId}
-              onChange={(event) => setTenantId(event.target.value)}
-              placeholder="almio"
-            />
-          </label>
-        </div>
+        <CardContent>
+          <form className="grid gap-6" onSubmit={readScopes}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-2">
+                <Label htmlFor="branch-scopes-api-base-url">API Base URL</Label>
+                <Input
+                  id="branch-scopes-api-base-url"
+                  value={apiBaseUrl}
+                  onChange={(event) => setApiBaseUrl(event.target.value)}
+                  placeholder="http://localhost:3001/v1"
+                />
+              </label>
 
-        <label className="grid gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Access Token
-          </span>
-          <textarea
-            className="field-input min-h-28 resize-y"
-            value={accessToken}
-            onChange={(event) => setAccessToken(event.target.value)}
-            placeholder="Bearer token emitido por Supabase Auth"
-          />
-        </label>
-
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Membership ID
-            </span>
-            <input
-              className="field-input"
-              value={membershipId}
-              onChange={(event) => setMembershipId(event.target.value)}
-              placeholder="UUID de company_membership"
-            />
-          </label>
-
-          <button
-            type="submit"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading || !membershipId.trim() || !tenantId.trim() || !accessToken.trim()}
-          >
-            {isLoading ? 'Consultando...' : 'Consultar Scopes'}
-          </button>
-        </div>
-
-        <div className="rounded-[24px] border border-border/70 bg-panel p-5">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-semibold">Sucursales asignadas</p>
-              <p className="text-sm text-muted">
-                Una UUID por linea, o separadas por coma. El `PUT` reemplaza el
-                scope completo.
-              </p>
+              <label className="grid gap-2">
+                <Label htmlFor="branch-scopes-tenant-id">Tenant</Label>
+                <Input
+                  id="branch-scopes-tenant-id"
+                  value={tenantId}
+                  onChange={(event) => setTenantId(event.target.value)}
+                  placeholder="almio"
+                />
+              </label>
             </div>
 
-            <button
-              type="button"
-              onClick={replaceScopes}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-5 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={
-                isLoading ||
-                !membershipId.trim() ||
-                !tenantId.trim() ||
-                !accessToken.trim()
-              }
-            >
-              {isLoading ? 'Aplicando...' : 'Reemplazar Scopes'}
-            </button>
-          </div>
+            <label className="grid gap-2">
+              <Label htmlFor="branch-scopes-access-token">Access Token</Label>
+              <Textarea
+                id="branch-scopes-access-token"
+                className="min-h-28"
+                value={accessToken}
+                onChange={(event) => setAccessToken(event.target.value)}
+                placeholder="Bearer token emitido por Supabase Auth"
+              />
+            </label>
 
-          <textarea
-            className="field-input mt-4 min-h-44 resize-y"
-            value={branchIdsInput}
-            onChange={(event) => setBranchIdsInput(event.target.value)}
-            placeholder="11111111-1111-4111-8111-111111111111"
-          />
-        </div>
-      </form>
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+              <label className="grid gap-2">
+                <Label htmlFor="branch-scopes-membership-id">Membership ID</Label>
+                <Input
+                  id="branch-scopes-membership-id"
+                  value={membershipId}
+                  onChange={(event) => setMembershipId(event.target.value)}
+                  placeholder="UUID de company_membership"
+                />
+              </label>
 
-      <div className="mt-6 grid gap-4">
-        {error ? (
-          <div className="rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-            {error}
-          </div>
-        ) : null}
+              <Button
+                type="submit"
+                size="lg"
+                loading={isLoading}
+                disabled={
+                  isLoading ||
+                  !membershipId.trim() ||
+                  !tenantId.trim() ||
+                  !accessToken.trim()
+                }
+              >
+                {isLoading ? 'Consultando...' : 'Consultar scopes'}
+              </Button>
+            </div>
 
-        <div className="rounded-[24px] border border-border/70 bg-surface p-5">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold">Resumen actual</p>
-            <p className="text-sm text-muted">
-              Resultado del ultimo `GET` o `PUT` sobre `branch_membership_scopes`.
-            </p>
-          </div>
+            <Card className="border-border/70 bg-muted/20 shadow-none">
+              <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-base">Sucursales asignadas</CardTitle>
+                  <CardDescription>
+                    Una UUID por línea o separadas por coma. El `PUT` reemplaza el scope
+                    completo.
+                  </CardDescription>
+                </div>
 
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={isLoading}
+                  onClick={replaceScopes}
+                  disabled={
+                    isLoading ||
+                    !membershipId.trim() ||
+                    !tenantId.trim() ||
+                    !accessToken.trim()
+                  }
+                >
+                  {isLoading ? 'Aplicando...' : 'Reemplazar scopes'}
+                </Button>
+              </CardHeader>
+
+              <CardContent>
+                <Textarea
+                  className="min-h-44"
+                  value={branchIdsInput}
+                  onChange={(event) => setBranchIdsInput(event.target.value)}
+                  placeholder="11111111-1111-4111-8111-111111111111"
+                />
+              </CardContent>
+            </Card>
+          </form>
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <Alert variant="danger">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader>
+          <CardTitle>Resumen actual</CardTitle>
+          <CardDescription>
+            Resultado del último `GET` o `PUT` sobre `branch_membership_scopes`.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
           {result ? (
-            <div className="mt-5 grid gap-5">
+            <div className="grid gap-5">
               <div className="grid gap-3 md:grid-cols-3">
                 <StatCard label="Membership" value={result.membershipId} />
                 <StatCard label="User Account" value={result.userAccountId} />
@@ -267,54 +295,49 @@ export function BranchScopesConsole({
               <div className="grid gap-3">
                 {result.branches.length > 0 ? (
                   result.branches.map((branch) => (
-                    <div
-                      key={branch.id}
-                      className="rounded-[20px] border border-border/70 bg-panel p-4"
-                    >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <Card key={branch.id} className="border-border/70 bg-muted/20 shadow-none">
+                      <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                         <div>
                           <p className="text-sm font-semibold">
                             {branch.code} · {branch.name}
                           </p>
-                          <p className="text-sm text-muted">{branch.id}</p>
+                          <p className="text-sm text-muted-foreground">{branch.id}</p>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                          <span className="rounded-full border border-border/70 px-3 py-1">
-                            {branch.status}
-                          </span>
-                          <span className="rounded-full border border-border/70 px-3 py-1">
-                            {branch.timezone}
-                          </span>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline">{branch.status}</Badge>
+                          <Badge variant="outline">{branch.timezone}</Badge>
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))
                 ) : (
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-muted-foreground">
                     Esta membership no tiene scopes activos asignados.
                   </p>
                 )}
               </div>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-muted">
-              Aun no hay datos cargados. Consulta una membership para empezar.
+            <p className="text-sm text-muted-foreground">
+              Aún no hay datos cargados. Consulta una membership para empezar.
             </p>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[20px] border border-border/70 bg-panel p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        {label}
-      </p>
-      <p className="mt-3 break-all text-sm font-medium text-foreground">{value}</p>
-    </div>
+    <Card className="border-border/70 bg-muted/20 shadow-none">
+      <CardContent className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-3 break-all text-sm font-medium text-foreground">{value}</p>
+      </CardContent>
+    </Card>
   );
 }

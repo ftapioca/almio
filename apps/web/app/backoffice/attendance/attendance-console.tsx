@@ -1,6 +1,20 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Textarea,
+} from '@almio/design-system';
 import { createClient } from '../../../lib/supabase/client';
 import { useBackofficeContext } from '../_components/backoffice-client-context';
 
@@ -595,513 +609,479 @@ export function AttendanceConsole({
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold">Attendance Console</p>
-            <p className="text-sm text-muted">
-              Filtros y marcacion manual sobre el contrato actual de attendance.
-            </p>
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle>Attendance Console</CardTitle>
+            <CardDescription>
+              Filtros y marcación manual sobre el contrato actual de attendance.
+            </CardDescription>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            loading={isLoading}
             onClick={handleRefresh}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-5 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isLoading || !accessToken.trim()}
           >
             {isLoading ? 'Refrescando...' : 'Refrescar'}
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              API Base URL
-            </span>
-            <input
-              className="field-input"
-              value={apiBaseUrl}
-              onChange={(event) => setApiBaseUrl(event.target.value)}
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Tenant
-            </span>
-            <input
-              className="field-input"
-              value={tenantId}
-              onChange={(event) => setTenantId(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <form className="mt-6 grid gap-4" onSubmit={handleFiltersSubmit}>
-          <div className="grid gap-4 lg:grid-cols-5">
+        <CardContent className="grid gap-6">
+          <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por sucursal
-              </span>
-              <select
-                className="field-input"
-                value={filterBranchId}
-                onChange={(event) => {
-                  setFilterBranchId(event.target.value);
-                  backoffice.setActiveBranchId(event.target.value);
-                  setFilterEmployeeId('');
-                  setFilterEmployeeSearchTerm('');
-                }}
-              >
-                <option value="">Todas</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.code} · {branch.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Buscar colaborador
-              </span>
-              <input
-                className="field-input"
-                value={filterEmployeeSearchTerm}
-                onChange={(event) => setFilterEmployeeSearchTerm(event.target.value)}
-                placeholder="Nombre, email o UUID"
+              <Label htmlFor="attendance-api-base-url">API Base URL</Label>
+              <Input
+                id="attendance-api-base-url"
+                value={apiBaseUrl}
+                onChange={(event) => setApiBaseUrl(event.target.value)}
               />
             </label>
 
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por colaborador
-              </span>
-              <select
-                className="field-input"
-                value={filterEmployeeId}
-                onChange={(event) => setFilterEmployeeId(event.target.value)}
-              >
-                <option value="">Todos</option>
-                {employeesForFilterBranchFiltered.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por evento
-              </span>
-              <select
-                className="field-input"
-                value={filterEventType}
-                onChange={(event) => setFilterEventType(event.target.value)}
-              >
-                <option value="">Todos</option>
-                {attendanceEventOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Desde
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={filterFrom}
-                onChange={(event) => setFilterFrom(event.target.value)}
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Hasta
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={filterTo}
-                onChange={(event) => setFilterTo(event.target.value)}
+              <Label htmlFor="attendance-tenant-id">Tenant</Label>
+              <Input
+                id="attendance-tenant-id"
+                value={tenantId}
+                onChange={(event) => setTenantId(event.target.value)}
               />
             </label>
           </div>
 
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading || !accessToken.trim()}
-          >
-            Aplicar filtros
-          </button>
-        </form>
-      </div>
+          <form className="grid gap-4" onSubmit={handleFiltersSubmit}>
+            <div className="grid gap-4 lg:grid-cols-5">
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-branch">Filtrar por sucursal</Label>
+                <select
+                  id="attendance-filter-branch"
+                  className="field-input"
+                  value={filterBranchId}
+                  onChange={(event) => {
+                    setFilterBranchId(event.target.value);
+                    backoffice.setActiveBranchId(event.target.value);
+                    setFilterEmployeeId('');
+                    setFilterEmployeeSearchTerm('');
+                  }}
+                >
+                  <option value="">Todas</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code} · {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold">
-              {selectedRecordId ? 'Editar marcacion' : 'Nueva marcacion'}
-            </p>
-            <p className="text-sm text-muted">
-              La UI genera `Idempotency-Key` para altas y permite ajustar source, fecha y notas.
-            </p>
-          </div>
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-employee-search">Buscar colaborador</Label>
+                <Input
+                  id="attendance-filter-employee-search"
+                  value={filterEmployeeSearchTerm}
+                  onChange={(event) => setFilterEmployeeSearchTerm(event.target.value)}
+                  placeholder="Nombre, email o UUID"
+                />
+              </label>
 
-          <button
-            type="button"
-            onClick={resetEditor}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-panel px-5 text-sm font-semibold text-foreground transition hover:bg-surface"
-          >
-            Nueva marcacion
-          </button>
-        </div>
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-employee">Filtrar por colaborador</Label>
+                <select
+                  id="attendance-filter-employee"
+                  className="field-input"
+                  value={filterEmployeeId}
+                  onChange={(event) => setFilterEmployeeId(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {employeesForFilterBranchFiltered.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.firstName} {employee.lastName}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        <form
-          className="mt-6 grid gap-4"
-          onSubmit={selectedRecordId ? handleUpdateAttendance : handleCreateAttendance}
-        >
-          <div className="grid gap-4 lg:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Sucursal
-              </span>
-              <select
-                className="field-input"
-                value={selectedBranchId}
-                onChange={(event) => {
-                  setSelectedBranchId(event.target.value);
-                  backoffice.setActiveBranchId(event.target.value);
-                  setSelectedEmployeeId('');
-                  setEmployeeSearchTerm('');
-                }}
-                required
-              >
-                <option value="">Seleccionar sucursal</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.code} · {branch.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-event-type">Filtrar por evento</Label>
+                <select
+                  id="attendance-filter-event-type"
+                  className="field-input"
+                  value={filterEventType}
+                  onChange={(event) => setFilterEventType(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {attendanceEventOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Buscar colaborador
-              </span>
-              <input
-                className="field-input"
-                value={employeeSearchTerm}
-                onChange={(event) => setEmployeeSearchTerm(event.target.value)}
-                placeholder="Nombre, email o UUID"
-              />
-            </label>
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-from">Desde</Label>
+                <Input
+                  id="attendance-filter-from"
+                  type="datetime-local"
+                  value={filterFrom}
+                  onChange={(event) => setFilterFrom(event.target.value)}
+                />
+              </label>
 
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Colaborador
-              </span>
-              <select
-                className="field-input"
-                value={selectedEmployeeId}
-                onChange={(event) => setSelectedEmployeeId(event.target.value)}
-                required
-              >
-                <option value="">Seleccionar colaborador</option>
-                {employeesForSelectedBranchFiltered.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Evento
-              </span>
-              <select
-                className="field-input"
-                value={eventType}
-                onChange={(event) =>
-                  setEventType(event.target.value as AttendanceRecord['eventType'])
-                }
-              >
-                {attendanceEventOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Source
-              </span>
-              <select
-                className="field-input"
-                value={source}
-                onChange={(event) =>
-                  setSource(event.target.value as AttendanceRecord['source'])
-                }
-              >
-                {attendanceSourceOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Fecha y hora
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={eventAtInput}
-                onChange={(event) => setEventAtInput(event.target.value)}
-                required
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Idempotency Key
-              </span>
-              <input
-                className="field-input"
-                value={idempotencyKey}
-                readOnly
-              />
-            </label>
-          </div>
-
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Notas
-            </span>
-            <textarea
-              className="field-input min-h-28 resize-y"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Ingreso manual por supervision"
-            />
-          </label>
-
-          <button
-            type="submit"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={
-              isLoading ||
-              !selectedBranchId ||
-              !selectedEmployeeId ||
-              !accessToken.trim()
-            }
-          >
-            {isLoading
-              ? selectedRecordId
-                ? 'Actualizando...'
-                : 'Registrando...'
-              : selectedRecordId
-                ? 'Actualizar marcacion'
-                : 'Registrar marcacion'}
-          </button>
-        </form>
-      </div>
-
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Resumen de jornada</p>
-          <p className="text-sm text-muted">
-            Se recalcula con `GET /v1/attendance` sobre la sucursal, colaborador y día del editor.
-          </p>
-        </div>
-
-        {selectedBranchId && selectedEmployeeId ? (
-          <div className="mt-6 grid gap-4">
-            <div className="grid gap-4 lg:grid-cols-4">
-              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  Día operativo
-                </p>
-                <p className="mt-2 text-sm font-semibold text-foreground">
-                  {formatDate(eventAtInput)}
-                </p>
-              </div>
-
-              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  Estado derivado
-                </p>
-                <p className="mt-2 text-sm font-semibold text-foreground">
-                  {attendanceJourneySummary.currentStatus}
-                </p>
-              </div>
-
-              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  Primer evento
-                </p>
-                <p className="mt-2 text-sm font-semibold text-foreground">
-                  {attendanceJourneySummary.firstRecord
-                    ? formatDateTime(attendanceJourneySummary.firstRecord.eventAt)
-                    : 'Sin registros'}
-                </p>
-              </div>
-
-              <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  Último evento
-                </p>
-                <p className="mt-2 text-sm font-semibold text-foreground">
-                  {attendanceJourneySummary.lastRecord
-                    ? formatDateTime(attendanceJourneySummary.lastRecord.eventAt)
-                    : 'Sin registros'}
-                </p>
-              </div>
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-filter-to">Hasta</Label>
+                <Input
+                  id="attendance-filter-to"
+                  type="datetime-local"
+                  value={filterTo}
+                  onChange={(event) => setFilterTo(event.target.value)}
+                />
+              </label>
             </div>
 
-            <div className="rounded-[24px] border border-border/70 bg-panel p-5">
-              <p className="text-sm font-semibold">
-                {employeeNameById.get(selectedEmployeeId) ?? selectedEmployeeId}
-              </p>
-              <p className="mt-1 text-sm text-muted">
-                {branchNameById.get(selectedBranchId) ?? selectedBranchId}
-              </p>
-              <p className="mt-3 text-sm text-muted">
-                Eventos del día: {attendanceJourneySummary.totalEvents}
-              </p>
+            <Button type="submit" loading={isLoading} disabled={isLoading || !accessToken.trim()}>
+              Aplicar filtros
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-              <div className="mt-4 grid gap-3">
-                {attendanceJourneySummary.orderedRecords.length > 0 ? (
-                  attendanceJourneySummary.orderedRecords.map((record) => (
-                    <div
-                      key={record.id}
-                      className="flex flex-col gap-2 rounded-[18px] border border-border/70 bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {record.eventType}
-                        </p>
-                        <p className="text-sm text-muted">
-                          {formatDateTime(record.eventAt)}
-                        </p>
-                      </div>
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle>
+              {selectedRecordId ? 'Editar marcación' : 'Nueva marcación'}
+            </CardTitle>
+            <CardDescription>
+              La UI genera `Idempotency-Key` para altas y permite ajustar source,
+              fecha y notas.
+            </CardDescription>
+          </div>
 
-                      <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                        <span className="rounded-full border border-border/70 px-3 py-1">
-                          {record.source}
-                        </span>
-                        {record.notes ? (
-                          <span className="rounded-full border border-border/70 px-3 py-1">
-                            con nota
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted">
-                    No hay eventos para la jornada seleccionada.
+          <Button type="button" variant="outline" onClick={resetEditor}>
+            Nueva marcación
+          </Button>
+        </CardHeader>
+
+        <CardContent>
+          <form
+            className="grid gap-4"
+            onSubmit={selectedRecordId ? handleUpdateAttendance : handleCreateAttendance}
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-branch">Sucursal</Label>
+                <select
+                  id="attendance-editor-branch"
+                  className="field-input"
+                  value={selectedBranchId}
+                  onChange={(event) => {
+                    setSelectedBranchId(event.target.value);
+                    backoffice.setActiveBranchId(event.target.value);
+                    setSelectedEmployeeId('');
+                    setEmployeeSearchTerm('');
+                  }}
+                  required
+                >
+                  <option value="">Seleccionar sucursal</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code} · {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-employee-search">Buscar colaborador</Label>
+                <Input
+                  id="attendance-editor-employee-search"
+                  value={employeeSearchTerm}
+                  onChange={(event) => setEmployeeSearchTerm(event.target.value)}
+                  placeholder="Nombre, email o UUID"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-employee">Colaborador</Label>
+                <select
+                  id="attendance-editor-employee"
+                  className="field-input"
+                  value={selectedEmployeeId}
+                  onChange={(event) => setSelectedEmployeeId(event.target.value)}
+                  required
+                >
+                  <option value="">Seleccionar colaborador</option>
+                  {employeesForSelectedBranchFiltered.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.firstName} {employee.lastName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-event-type">Evento</Label>
+                <select
+                  id="attendance-editor-event-type"
+                  className="field-input"
+                  value={eventType}
+                  onChange={(event) =>
+                    setEventType(event.target.value as AttendanceRecord['eventType'])
+                  }
+                >
+                  {attendanceEventOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-source">Source</Label>
+                <select
+                  id="attendance-editor-source"
+                  className="field-input"
+                  value={source}
+                  onChange={(event) =>
+                    setSource(event.target.value as AttendanceRecord['source'])
+                  }
+                >
+                  {attendanceSourceOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-event-at">Fecha y hora</Label>
+                <Input
+                  id="attendance-editor-event-at"
+                  type="datetime-local"
+                  value={eventAtInput}
+                  onChange={(event) => setEventAtInput(event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="attendance-editor-idempotency-key">Idempotency Key</Label>
+                <Input id="attendance-editor-idempotency-key" value={idempotencyKey} readOnly />
+              </label>
+            </div>
+
+            <label className="grid gap-2">
+              <Label htmlFor="attendance-editor-notes">Notas</Label>
+              <Textarea
+                id="attendance-editor-notes"
+                className="min-h-28"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Ingreso manual por supervision"
+              />
+            </label>
+
+            <Button
+              type="submit"
+              size="lg"
+              loading={isLoading}
+              disabled={
+                isLoading ||
+                !selectedBranchId ||
+                !selectedEmployeeId ||
+                !accessToken.trim()
+              }
+            >
+              {isLoading
+                ? selectedRecordId
+                  ? 'Actualizando...'
+                  : 'Registrando...'
+                : selectedRecordId
+                  ? 'Actualizar marcación'
+                  : 'Registrar marcación'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader>
+          <CardTitle>Resumen de jornada</CardTitle>
+          <CardDescription>
+            Se recalcula con `GET /v1/attendance` sobre la sucursal, colaborador y día
+            del editor.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          {selectedBranchId && selectedEmployeeId ? (
+            <div className="grid gap-4">
+              <div className="grid gap-4 lg:grid-cols-4">
+                <SummaryCard label="Día operativo" value={formatDate(eventAtInput)} />
+                <SummaryCard
+                  label="Estado derivado"
+                  value={attendanceJourneySummary.currentStatus}
+                />
+                <SummaryCard
+                  label="Primer evento"
+                  value={
+                    attendanceJourneySummary.firstRecord
+                      ? formatDateTime(attendanceJourneySummary.firstRecord.eventAt)
+                      : 'Sin registros'
+                  }
+                />
+                <SummaryCard
+                  label="Último evento"
+                  value={
+                    attendanceJourneySummary.lastRecord
+                      ? formatDateTime(attendanceJourneySummary.lastRecord.eventAt)
+                      : 'Sin registros'
+                  }
+                />
+              </div>
+
+              <Card className="border-border/70 bg-muted/20 shadow-none">
+                <CardContent className="p-5">
+                  <p className="text-sm font-semibold">
+                    {employeeNameById.get(selectedEmployeeId) ?? selectedEmployeeId}
                   </p>
-                )}
-              </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {branchNameById.get(selectedBranchId) ?? selectedBranchId}
+                  </p>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Eventos del día: {attendanceJourneySummary.totalEvents}
+                  </p>
+
+                  <div className="mt-4 grid gap-3">
+                    {attendanceJourneySummary.orderedRecords.length > 0 ? (
+                      attendanceJourneySummary.orderedRecords.map((record) => (
+                        <Card
+                          key={record.id}
+                          className="border-border/70 bg-background shadow-none"
+                        >
+                          <CardContent className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {record.eventType}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDateTime(record.eventAt)}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline">{record.source}</Badge>
+                              {record.notes ? <Badge variant="outline">con nota</Badge> : null}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No hay eventos para la jornada seleccionada.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        ) : (
-          <p className="mt-6 text-sm text-muted">
-            Selecciona sucursal, colaborador y fecha en el editor para ver la jornada.
-          </p>
-        )}
-      </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Selecciona sucursal, colaborador y fecha en el editor para ver la jornada.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {(error || success) && (
         <div className="grid gap-3">
           {error ? (
-            <div className="rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-              {error}
-            </div>
+            <Alert variant="danger">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : null}
           {success ? (
-            <div className="rounded-[20px] border border-brand/30 bg-brand/8 p-4 text-sm text-brand">
-              {success}
-            </div>
+            <Alert variant="success">
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
           ) : null}
         </div>
       )}
 
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Marcaciones recientes</p>
-          <p className="text-sm text-muted">
-            Ultimos 20 registros segun los filtros activos.
-          </p>
-        </div>
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader>
+          <CardTitle>Marcaciones recientes</CardTitle>
+          <CardDescription>
+            Últimos 20 registros según los filtros activos.
+          </CardDescription>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4">
+        <CardContent className="grid gap-4">
           {records.length > 0 ? (
             records.map((record) => (
-              <div
-                key={record.id}
-                className="rounded-[24px] border border-border/70 bg-panel p-5"
-              >
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {record.eventType} · {employeeNameById.get(record.employeeId) ?? record.employeeId}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {branchNameById.get(record.branchId) ?? record.branchId}
-                    </p>
-                    <p className="mt-2 text-sm text-foreground">
-                      {formatDateTime(record.eventAt)}
-                    </p>
+              <Card key={record.id} className="border-border/70 bg-muted/20 shadow-none">
+                <CardContent className="p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {record.eventType} ·{' '}
+                        {employeeNameById.get(record.employeeId) ?? record.employeeId}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {branchNameById.get(record.branchId) ?? record.branchId}
+                      </p>
+                      <p className="mt-2 text-sm text-foreground">
+                        {formatDateTime(record.eventAt)}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => void loadRecordIntoEditor(record.id)}
+                      >
+                        Cargar
+                      </Button>
+                      <Badge variant="outline">{record.source}</Badge>
+                      <Badge variant="outline">{record.id}</Badge>
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                    <button
-                      type="button"
-                      onClick={() => void loadRecordIntoEditor(record.id)}
-                      className="inline-flex items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand transition hover:border-brand/50 hover:bg-brand/12"
-                    >
-                      Cargar
-                    </button>
-                    <span className="rounded-full border border-border/70 px-3 py-1">
-                      {record.source}
-                    </span>
-                    <span className="rounded-full border border-border/70 px-3 py-1">
-                      {record.id}
-                    </span>
-                  </div>
-                </div>
-
-                {record.notes ? (
-                  <p className="mt-4 text-sm leading-6 text-muted">{record.notes}</p>
-                ) : null}
-              </div>
+                  {record.notes ? (
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                      {record.notes}
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
             ))
           ) : (
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               No hay marcaciones para los filtros actuales.
             </p>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card className="border-border/70 bg-muted/20 shadow-none">
+      <CardContent className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+      </CardContent>
+    </Card>
   );
 }

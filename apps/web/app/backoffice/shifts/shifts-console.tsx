@@ -1,6 +1,20 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Textarea,
+} from '@almio/design-system';
 import { createClient } from '../../../lib/supabase/client';
 import { useBackofficeContext } from '../_components/backoffice-client-context';
 
@@ -813,563 +827,530 @@ export function ShiftsConsole({
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold">Shifts Console</p>
-            <p className="text-sm text-muted">
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle>Shifts Console</CardTitle>
+            <CardDescription>
               Filtros, edición y comandos operativos sobre el contrato actual de shifts.
-            </p>
+            </CardDescription>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            loading={isLoading}
             onClick={handleRefresh}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-5 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isLoading || !accessToken.trim()}
           >
             {isLoading ? 'Refrescando...' : 'Refrescar'}
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              API Base URL
-            </span>
-            <input
-              className="field-input"
-              value={apiBaseUrl}
-              onChange={(event) => setApiBaseUrl(event.target.value)}
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Tenant
-            </span>
-            <input
-              className="field-input"
-              value={tenantId}
-              onChange={(event) => setTenantId(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <form className="mt-6 grid gap-4" onSubmit={handleFiltersSubmit}>
-          <div className="grid gap-4 lg:grid-cols-2">
+        <CardContent className="grid gap-6">
+          <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por sucursal
-              </span>
-              <select
-                className="field-input"
-                value={filterBranchId}
-                onChange={(event) => {
-                  setFilterBranchId(event.target.value);
-                  backoffice.setActiveBranchId(event.target.value);
-                  setFilterEmployeeId('');
-                }}
-              >
-                <option value="">Todas</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.code} · {branch.name}
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="shifts-api-base-url">API Base URL</Label>
+              <Input
+                id="shifts-api-base-url"
+                value={apiBaseUrl}
+                onChange={(event) => setApiBaseUrl(event.target.value)}
+              />
             </label>
 
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por colaborador
-              </span>
-              <select
-                className="field-input"
-                value={filterEmployeeId}
-                onChange={(event) => setFilterEmployeeId(event.target.value)}
-              >
-                <option value="">Todos</option>
-                {employees
-                  .filter((employee) => !filterBranchId || employee.branchId === filterBranchId)
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.firstName} {employee.lastName}
+              <Label htmlFor="shifts-tenant-id">Tenant</Label>
+              <Input
+                id="shifts-tenant-id"
+                value={tenantId}
+                onChange={(event) => setTenantId(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <form className="grid gap-4" onSubmit={handleFiltersSubmit}>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-filter-branch">Filtrar por sucursal</Label>
+                <select
+                  id="shifts-filter-branch"
+                  className="field-input"
+                  value={filterBranchId}
+                  onChange={(event) => {
+                    setFilterBranchId(event.target.value);
+                    backoffice.setActiveBranchId(event.target.value);
+                    setFilterEmployeeId('');
+                  }}
+                >
+                  <option value="">Todas</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code} · {branch.name}
                     </option>
                   ))}
-              </select>
-            </label>
-          </div>
+                </select>
+              </label>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Filtrar por estado
-              </span>
-              <select
-                className="field-input"
-                value={filterStatus}
-                onChange={(event) => setFilterStatus(event.target.value)}
-              >
-                <option value="">Todos</option>
-                {shiftStatusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-filter-employee">Filtrar por colaborador</Label>
+                <select
+                  id="shifts-filter-employee"
+                  className="field-input"
+                  value={filterEmployeeId}
+                  onChange={(event) => setFilterEmployeeId(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {employees
+                    .filter((employee) => !filterBranchId || employee.branchId === filterBranchId)
+                    .map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.firstName} {employee.lastName}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
 
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Desde
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={filterFrom}
-                onChange={(event) => setFilterFrom(event.target.value)}
-              />
-            </label>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-filter-status">Filtrar por estado</Label>
+                <select
+                  id="shifts-filter-status"
+                  className="field-input"
+                  value={filterStatus}
+                  onChange={(event) => setFilterStatus(event.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {shiftStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Hasta
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={filterTo}
-                onChange={(event) => setFilterTo(event.target.value)}
-              />
-            </label>
-          </div>
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-filter-from">Desde</Label>
+                <Input
+                  id="shifts-filter-from"
+                  type="datetime-local"
+                  value={filterFrom}
+                  onChange={(event) => setFilterFrom(event.target.value)}
+                />
+              </label>
 
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading || !accessToken.trim()}
-          >
-            Aplicar filtros
-          </button>
-        </form>
-      </div>
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-filter-to">Hasta</Label>
+                <Input
+                  id="shifts-filter-to"
+                  type="datetime-local"
+                  value={filterTo}
+                  onChange={(event) => setFilterTo(event.target.value)}
+                />
+              </label>
+            </div>
 
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold">Cobertura del día</p>
-            <p className="text-sm text-muted">
+            <Button type="submit" loading={isLoading} disabled={isLoading || !accessToken.trim()}>
+              Aplicar filtros
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle>Cobertura del día</CardTitle>
+            <CardDescription>
               Resumen operativo con la data cargada para sucursal y fecha objetivo.
-            </p>
+            </CardDescription>
           </div>
 
           <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Día de cobertura
-            </span>
-            <input
-              className="field-input"
+            <Label htmlFor="shifts-coverage-date">Día de cobertura</Label>
+            <Input
+              id="shifts-coverage-date"
               type="datetime-local"
               value={coverageDateInput}
               onChange={(event) => setCoverageDateInput(event.target.value)}
             />
           </label>
-        </div>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-4">
-          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Sucursal analizada
-            </p>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              {coverageSummary.branchId
-                ? branchNameById.get(coverageSummary.branchId) ?? coverageSummary.branchId
-                : 'Todas las cargadas'}
-            </p>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-4 lg:grid-cols-4">
+            <SummaryCard
+              label="Sucursal analizada"
+              value={
+                coverageSummary.branchId
+                  ? branchNameById.get(coverageSummary.branchId) ?? coverageSummary.branchId
+                  : 'Todas las cargadas'
+              }
+            />
+            <SummaryCard label="Turnos del día" value={String(coverageSummary.totalShifts)} />
+            <SummaryCard
+              label="Asignados / publicados"
+              value={`${coverageSummary.assignedShifts} / ${coverageSummary.publishedShifts}`}
+            />
+            <SummaryCard
+              label="Dotación única"
+              value={String(coverageSummary.uniqueEmployees)}
+            />
           </div>
 
-          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Turnos del día
-            </p>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              {coverageSummary.totalShifts}
-            </p>
-          </div>
+          <Card className="border-border/70 bg-muted/20 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">
+                Agenda de cobertura: {coverageSummary.dateLabel}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {coverageSummary.records.length > 0 ? (
+                coverageSummary.records.map((record) => (
+                  <Card key={record.id} className="border-border/70 bg-background shadow-none">
+                    <CardContent className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          {employeeNameById.get(record.employeeId ?? '') ?? 'Sin asignar'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDateTime(record.startsAt)} → {formatDateTime(record.endsAt)}
+                        </p>
+                      </div>
 
-          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Asignados / publicados
-            </p>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              {coverageSummary.assignedShifts} / {coverageSummary.publishedShifts}
-            </p>
-          </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{record.status}</Badge>
+                        <Badge variant="outline">{record.id}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No hay turnos cargados para esa fecha con los filtros actuales.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="rounded-[24px] border border-border/70 bg-panel p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Dotación única
-            </p>
-            <p className="mt-2 text-sm font-semibold text-foreground">
-              {coverageSummary.uniqueEmployees}
-            </p>
-          </div>
-        </div>
+          <Card className="border-border/70 bg-muted/20 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">Excepciones shift vs attendance</CardTitle>
+              <CardDescription>
+                Cruce operativo sobre la misma sucursal y jornada de cobertura.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {shiftAttendanceExceptions.length > 0 ? (
+                shiftAttendanceExceptions.map((exception, index) => (
+                  <Alert
+                    key={`${exception.type}-${exception.shiftId ?? exception.employeeId}-${index}`}
+                    variant={exception.severity === 'danger' ? 'danger' : 'warning'}
+                  >
+                    <AlertDescription>
+                      <p className="font-semibold">
+                        {employeeNameById.get(exception.employeeId) ?? exception.employeeId}
+                      </p>
+                      <p>{exception.detail}</p>
+                    </AlertDescription>
+                  </Alert>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Sin excepciones mínimas detectadas entre turnos y attendance para esta
+                  cobertura.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
 
-        <div className="mt-4 rounded-[24px] border border-border/70 bg-panel p-5">
-          <p className="text-sm font-semibold">Agenda de cobertura: {coverageSummary.dateLabel}</p>
-          <div className="mt-4 grid gap-3">
-            {coverageSummary.records.length > 0 ? (
-              coverageSummary.records.map((record) => (
-                <div
-                  key={record.id}
-                  className="flex flex-col gap-2 rounded-[18px] border border-border/70 bg-surface px-4 py-3 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {employeeNameById.get(record.employeeId ?? '') ?? 'Sin asignar'}
-                    </p>
-                    <p className="text-sm text-muted">
-                      {formatDateTime(record.startsAt)} → {formatDateTime(record.endsAt)}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                    <span className="rounded-full border border-border/70 px-3 py-1">
-                      {record.status}
-                    </span>
-                    <span className="rounded-full border border-border/70 px-3 py-1">
-                      {record.id}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted">
-                No hay turnos cargados para esa fecha con los filtros actuales.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[24px] border border-border/70 bg-panel p-5">
-          <p className="text-sm font-semibold">Excepciones shift vs attendance</p>
-          <p className="mt-1 text-sm text-muted">
-            Cruce operativo sobre la misma sucursal y jornada de cobertura.
-          </p>
-
-          <div className="mt-4 grid gap-3">
-            {shiftAttendanceExceptions.length > 0 ? (
-              shiftAttendanceExceptions.map((exception, index) => (
-                <div
-                  key={`${exception.type}-${exception.shiftId ?? exception.employeeId}-${index}`}
-                  className={
-                    exception.severity === 'danger'
-                      ? 'rounded-[18px] border border-danger/30 bg-danger/8 px-4 py-3 text-sm text-danger'
-                      : 'rounded-[18px] border border-brand/30 bg-brand/8 px-4 py-3 text-sm text-brand'
-                  }
-                >
-                  <p className="font-semibold">
-                    {employeeNameById.get(exception.employeeId) ?? exception.employeeId}
-                  </p>
-                  <p className="mt-1">{exception.detail}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted">
-                Sin excepciones mínimas detectadas entre turnos y attendance para esta cobertura.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold">Editor de turnos</p>
-            <p className="text-sm text-muted">
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle>Editor de turnos</CardTitle>
+            <CardDescription>
               Crea un turno nuevo o carga uno existente para editar datos permitidos.
-            </p>
+            </CardDescription>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={resetEditor}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-panel px-5 text-sm font-semibold text-foreground transition hover:bg-surface"
-            >
+            <Button type="button" variant="outline" onClick={resetEditor}>
               Nuevo turno
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              loading={isLoading}
               onClick={() => void handleRefresh()}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-5 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isLoading || !accessToken.trim()}
             >
               Recargar lista
-            </button>
+            </Button>
           </div>
-        </div>
+        </CardHeader>
 
-        <form
-          className="mt-6 grid gap-4"
-          onSubmit={selectedShift ? handleUpdateShift : handleCreateShift}
-        >
-          <div className="grid gap-4 lg:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Sucursal
-              </span>
-              <select
-                className="field-input"
-                value={selectedBranchId}
-                onChange={(event) => {
-                  setSelectedBranchId(event.target.value);
-                  backoffice.setActiveBranchId(event.target.value);
-                  setSelectedEmployeeId('');
-                }}
-                required
-              >
-                <option value="">Seleccionar sucursal</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.code} · {branch.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Colaborador
-              </span>
-              <select
-                className="field-input"
-                value={selectedEmployeeId}
-                onChange={(event) => setSelectedEmployeeId(event.target.value)}
-              >
-                <option value="">Sin asignar</option>
-                {employeesForSelectedBranch.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {!selectedShift ? (
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Estado inicial
-              </span>
-              <select
-                className="field-input"
-                value={selectedStatus}
-                onChange={(event) =>
-                  setSelectedStatus(event.target.value as 'SCHEDULED' | 'PUBLISHED')
-                }
-              >
-                <option value="SCHEDULED">SCHEDULED</option>
-                <option value="PUBLISHED">PUBLISHED</option>
-              </select>
-            </label>
-          ) : (
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Estado actual
-              </span>
-              <input className="field-input" value={selectedShift.status} readOnly />
-            </label>
-          )}
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Inicio
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={startsAtInput}
-                onChange={(event) => setStartsAtInput(event.target.value)}
-                required
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Fin
-              </span>
-              <input
-                className="field-input"
-                type="datetime-local"
-                value={endsAtInput}
-                onChange={(event) => setEndsAtInput(event.target.value)}
-                required
-              />
-            </label>
-          </div>
-
-          <label className="grid gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-              Notas
-            </span>
-            <textarea
-              className="field-input min-h-28 resize-y"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Apertura, cierre, reemplazo, observaciones operativas"
-            />
-          </label>
-
-          {localOverlapRecords.length > 0 ? (
-            <div className="rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-              El turno propuesto se solapa con {localOverlapRecords.length} turno(s) ya cargado(s)
-              para este colaborador en la misma sucursal.
-            </div>
-          ) : null}
-
-          {selectedShift && !canEditShiftStructure(selectedShift.status) ? (
-            <div className="rounded-[20px] border border-border/70 bg-panel p-4 text-sm text-muted">
-              Este turno está en estado {selectedShift.status}. Solo conviene revisarlo o usar
-              comandos permitidos desde la lista; la edición estructural queda bloqueada.
-            </div>
-          ) : null}
-
-          <button
-            type="submit"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={
-              isLoading ||
-              !selectedBranchId ||
-              !accessToken.trim() ||
-              localOverlapRecords.length > 0 ||
-              !!(selectedShift && !canEditShiftStructure(selectedShift.status))
-            }
+        <CardContent>
+          <form
+            className="grid gap-4"
+            onSubmit={selectedShift ? handleUpdateShift : handleCreateShift}
           >
-            {isLoading
-              ? selectedShift
-                ? 'Actualizando...'
-                : 'Creando...'
-              : selectedShift
-                ? 'Actualizar turno'
-                : 'Crear turno'}
-          </button>
-        </form>
-      </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-branch">Sucursal</Label>
+                <select
+                  id="shifts-editor-branch"
+                  className="field-input"
+                  value={selectedBranchId}
+                  onChange={(event) => {
+                    setSelectedBranchId(event.target.value);
+                    backoffice.setActiveBranchId(event.target.value);
+                    setSelectedEmployeeId('');
+                  }}
+                  required
+                >
+                  <option value="">Seleccionar sucursal</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code} · {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-employee">Colaborador</Label>
+                <select
+                  id="shifts-editor-employee"
+                  className="field-input"
+                  value={selectedEmployeeId}
+                  onChange={(event) => setSelectedEmployeeId(event.target.value)}
+                >
+                  <option value="">Sin asignar</option>
+                  {employeesForSelectedBranch.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.firstName} {employee.lastName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {!selectedShift ? (
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-initial-status">Estado inicial</Label>
+                <select
+                  id="shifts-editor-initial-status"
+                  className="field-input"
+                  value={selectedStatus}
+                  onChange={(event) =>
+                    setSelectedStatus(event.target.value as 'SCHEDULED' | 'PUBLISHED')
+                  }
+                >
+                  <option value="SCHEDULED">SCHEDULED</option>
+                  <option value="PUBLISHED">PUBLISHED</option>
+                </select>
+              </label>
+            ) : (
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-current-status">Estado actual</Label>
+                <Input id="shifts-editor-current-status" value={selectedShift.status} readOnly />
+              </label>
+            )}
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-starts-at">Inicio</Label>
+                <Input
+                  id="shifts-editor-starts-at"
+                  type="datetime-local"
+                  value={startsAtInput}
+                  onChange={(event) => setStartsAtInput(event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <Label htmlFor="shifts-editor-ends-at">Fin</Label>
+                <Input
+                  id="shifts-editor-ends-at"
+                  type="datetime-local"
+                  value={endsAtInput}
+                  onChange={(event) => setEndsAtInput(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
+
+            <label className="grid gap-2">
+              <Label htmlFor="shifts-editor-notes">Notas</Label>
+              <Textarea
+                id="shifts-editor-notes"
+                className="min-h-28"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Apertura, cierre, reemplazo, observaciones operativas"
+              />
+            </label>
+
+            {localOverlapRecords.length > 0 ? (
+              <Alert variant="danger">
+                <AlertDescription>
+                  El turno propuesto se solapa con {localOverlapRecords.length} turno(s)
+                  ya cargado(s) para este colaborador en la misma sucursal.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {selectedShift && !canEditShiftStructure(selectedShift.status) ? (
+              <Alert variant="warning">
+                <AlertDescription>
+                  Este turno está en estado {selectedShift.status}. Solo conviene
+                  revisarlo o usar comandos permitidos desde la lista; la edición
+                  estructural queda bloqueada.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            <Button
+              type="submit"
+              size="lg"
+              loading={isLoading}
+              disabled={
+                isLoading ||
+                !selectedBranchId ||
+                !accessToken.trim() ||
+                localOverlapRecords.length > 0 ||
+                !!(selectedShift && !canEditShiftStructure(selectedShift.status))
+              }
+            >
+              {isLoading
+                ? selectedShift
+                  ? 'Actualizando...'
+                  : 'Creando...'
+                : selectedShift
+                  ? 'Actualizar turno'
+                  : 'Crear turno'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {(error || success) && (
         <div className="grid gap-3">
           {error ? (
-            <div className="rounded-[20px] border border-danger/30 bg-danger/8 p-4 text-sm text-danger">
-              {error}
-            </div>
+            <Alert variant="danger">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : null}
           {success ? (
-            <div className="rounded-[20px] border border-brand/30 bg-brand/8 p-4 text-sm text-brand">
-              {success}
-            </div>
+            <Alert variant="success">
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
           ) : null}
         </div>
       )}
 
       {commandGuardrail ? (
-        <div
-          className={
-            commandGuardrail.severity === 'warning'
-              ? 'rounded-[20px] border border-brand/30 bg-brand/8 p-4 text-sm text-brand'
-              : 'rounded-[20px] border border-border/70 bg-panel p-4 text-sm text-muted'
-          }
-        >
-          {commandGuardrail.detail}
-        </div>
+        <Alert variant={commandGuardrail.severity === 'warning' ? 'warning' : 'info'}>
+          <AlertDescription>{commandGuardrail.detail}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <div className="rounded-[30px] border border-border/70 bg-surface/95 p-6 shadow-card backdrop-blur">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Turnos recientes</p>
-          <p className="text-sm text-muted">
-            Últimos 20 registros según los filtros activos. Haz click en “Cargar” para editar.
-          </p>
-        </div>
+      <Card className="border-border/70 bg-card/95">
+        <CardHeader>
+          <CardTitle>Turnos recientes</CardTitle>
+          <CardDescription>
+            Últimos 20 registros según los filtros activos. Haz click en “Cargar” para
+            editar.
+          </CardDescription>
+        </CardHeader>
 
-        <div className="mt-6 grid gap-4">
+        <CardContent className="grid gap-4">
           {records.length > 0 ? (
             records.map((record) => {
               const allowedCommands = getAllowedCommands(record.status);
 
               return (
-                <div
-                  key={record.id}
-                  className="rounded-[24px] border border-border/70 bg-panel p-5"
-                >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold">
-                        {branchNameById.get(record.branchId) ?? record.branchId}
-                      </p>
-                      <p className="mt-1 text-sm text-muted">
-                        {record.employeeId
-                          ? employeeNameById.get(record.employeeId) ?? record.employeeId
-                          : 'Sin colaborador asignado'}
-                      </p>
-                      <p className="mt-2 text-sm text-foreground">
-                        {formatDateTime(record.startsAt)} → {formatDateTime(record.endsAt)}
-                      </p>
+                <Card key={record.id} className="border-border/70 bg-muted/20 shadow-none">
+                  <CardContent className="p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {branchNameById.get(record.branchId) ?? record.branchId}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {record.employeeId
+                            ? employeeNameById.get(record.employeeId) ?? record.employeeId
+                            : 'Sin colaborador asignado'}
+                        </p>
+                        <p className="mt-2 text-sm text-foreground">
+                          {formatDateTime(record.startsAt)} → {formatDateTime(record.endsAt)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{record.status}</Badge>
+                        <Badge variant="outline">{record.id}</Badge>
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                      <span className="rounded-full border border-border/70 px-3 py-1">
-                        {record.status}
-                      </span>
-                      <span className="rounded-full border border-border/70 px-3 py-1">
-                        {record.id}
-                      </span>
-                    </div>
-                  </div>
+                    {record.notes ? (
+                      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                        {record.notes}
+                      </p>
+                    ) : null}
 
-                  {record.notes ? (
-                    <p className="mt-4 text-sm leading-6 text-muted">{record.notes}</p>
-                  ) : null}
-
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => loadShiftIntoEditor(record)}
-                      className="inline-flex h-10 items-center justify-center rounded-full border border-brand/30 bg-brand/8 px-4 text-sm font-semibold text-brand transition hover:border-brand/50 hover:bg-brand/12"
-                    >
-                      Cargar
-                    </button>
-
-                    {allowedCommands.map((command) => (
-                      <button
-                        key={command}
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <Button
                         type="button"
-                        onClick={() => void handleCommand(record.id, command)}
-                        className="inline-flex h-10 items-center justify-center rounded-full border border-border/70 bg-surface px-4 text-sm font-semibold text-foreground transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isLoading || !accessToken.trim()}
+                        variant="secondary"
+                        onClick={() => loadShiftIntoEditor(record)}
                       >
-                        {command === 'publish'
-                          ? 'Publish'
-                          : command === 'cancel'
-                            ? 'Cancel'
-                            : 'Complete'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        Cargar
+                      </Button>
+
+                      {allowedCommands.map((command) => (
+                        <Button
+                          key={command}
+                          type="button"
+                          variant="outline"
+                          onClick={() => void handleCommand(record.id, command)}
+                          disabled={isLoading || !accessToken.trim()}
+                        >
+                          {command === 'publish'
+                            ? 'Publish'
+                            : command === 'cancel'
+                              ? 'Cancel'
+                              : 'Complete'}
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })
           ) : (
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               No hay turnos para los filtros actuales.
             </p>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card className="border-border/70 bg-muted/20 shadow-none">
+      <CardContent className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+      </CardContent>
+    </Card>
   );
 }
