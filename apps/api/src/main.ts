@@ -49,10 +49,13 @@ async function bootstrap() {
   await app.listen(runtimeConfig.port);
 }
 
-export default async function handler(request: Request, response: Response) {
+async function handler(request: Request, response: Response) {
   await ensureAppInitialized();
   expressServer(request, response);
 }
+
+module.exports = handler;
+module.exports.default = handler;
 
 if (process.env.VERCEL !== '1') {
   void bootstrap();
