@@ -56,12 +56,23 @@ Cierre documental de `attendance` y `shifts`, derivado de `SoW`, `SDD`, `SRS`, `
 - pruebas de contratos de `shifts` para comandos explícitos y transiciones inválidas
 - validación real de login con `branch-admin@almio.cl` consumiendo la API con JWT emitido por Supabase
 - validación local de workspace con `lint`, `typecheck`, `test` y `build`
+- validación funcional real en producción sobre Vercel:
+  - `apps/api` recuperada y validada con `health/live` y `health/ready`
+  - `apps/web` validada con login real vía `Supabase Auth`
+  - `attendance` cargando correctamente en producción
+  - rechazo esperado de secuencia inválida al repetir `CHECK_IN`
+  - `shifts` validado con creación de turno y transición `publish`
 
 ## Commits de referencia
 
 - `223969f` `Harden phase 3 contracts and scope admin flow`
 - `b174379` `Explicit shift commands and attendance idempotency`
 - `3db12d1` `Add Supabase web auth for backoffice`
+- `b4aeb25` `refactor backoffice web consoles`
+- `e1cc8aa` `fix attendance loading loop`
+- `d942b17` `fix api vercel handler export`
+- `16ff3a0` `fix api commonjs handler export`
+- `053b0a3` `fix api express runtime dependency`
 
 ## Decisión de corte
 

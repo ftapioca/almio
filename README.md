@@ -80,6 +80,11 @@ Implementado hoy:
 - backoffice web mínimo para `branch_membership_scopes` en `/backoffice/branch-scopes`
 - UI funcional inicial de `attendance` en `/backoffice/attendance`
 - UI funcional inicial de `shifts` en `/backoffice/shifts`
+- refactor de backoffice web para reutilizar:
+  - cliente API autenticado
+  - hooks compartidos de sesión/contexto
+  - utilidades comunes de branches, employees, errores y fechas
+  - componentes separados para filtros, editor, resúmenes y listados en `attendance` y `shifts`
 - auth web real con `Supabase Auth` para proteger el backoffice en `/auth/login`
 - ADRs iniciales de multi-tenancy, offline y RBAC
 - validación base del workspace: `typecheck`, `lint`, `test`, `build`
@@ -99,6 +104,15 @@ Implementado hoy:
   - `apps/web` desplegada y validada con login real por `Supabase Auth`
   - `pnpm prisma:migrate:release` ejecutado sobre el entorno actual
   - backoffice `/backoffice/branch-scopes` operativo en producción
+  - fix de compatibilidad Vercel para `apps/api`:
+    - handler serverless exportado desde `src/main.ts`
+    - dependencia runtime `express` declarada explícitamente en `apps/api`
+  - validación funcional real en producción:
+    - login con usuario `BRANCH_ADMIN`
+    - carga operativa de `/backoffice/attendance`
+    - rechazo esperado de secuencia inválida en `attendance`
+    - creación de turno en `/backoffice/shifts`
+    - transición `publish` ejecutada con éxito en producción
 - cierre explícito de autenticación:
   - el login operativo vive en `Supabase Auth`
   - el backend Almio no expone hoy endpoints propios `login|logout|refresh`
@@ -129,14 +143,17 @@ Pendiente para próximas fases:
 
 Para continuar sin perder contexto, el siguiente orden de trabajo recomendado es:
 
-1. seguir endureciendo la UI funcional inicial de `attendance`:
+1. endurecer UX funcional de `attendance`:
    - mantener `Idempotency-Key`
    - no reabrir decisiones de secuencia ni estados
-2. seguir endureciendo la UI funcional inicial de `shifts`:
-   - usar comandos explícitos `publish`, `cancel` y `complete`
-   - mantener fuera de la UI cualquier cambio directo de `status`
-3. después consolidar el shell/backoffice general:
+   - anticipar mejor el siguiente evento válido para reducir errores evitables
+2. endurecer UX funcional de `shifts`:
+   - mantener `publish`, `cancel` y `complete`
+   - no reintroducir cambios directos de `status`
+   - agregar feedback visible en acciones `Nuevo turno`, `Cargar` y comandos por fila
+3. después consolidar shell/backoffice general:
    - navegación operativa
+   - jerarquía visual y estados vacíos/post-acción
    - capas compartidas de auth, tenant y sucursal activa
 
 Checklist formal del bloque de despliegue:

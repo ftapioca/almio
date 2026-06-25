@@ -84,6 +84,8 @@ Configuración aplicada:
 
 - `fluid: true`
 - `maxDuration: 30` para la function derivada de `src/main.ts`
+- `apps/api/src/main.ts` debe exponer un handler serverless válido para Vercel además del bootstrap local
+- `express` debe existir en `dependencies` de `apps/api`, no sólo como dependencia transitiva
 
 Variables de entorno mínimas:
 
@@ -136,3 +138,6 @@ La CLI vincula cada carpeta con su proyecto Vercel respectivo dentro de `.vercel
 - `apps/api` corre como una Vercel Function única de NestJS
 - esta estrategia es adecuada hoy, pero puede dejar de ser buen fit cuando entren `Redis`, `BullMQ`, jobs prolongados o procesos persistentes
 - si el backend gana esos componentes, reevaluar `api` fuera de Vercel sin mover necesariamente `web`
+- si aparece `FUNCTION_INVOCATION_FAILED`, revisar primero logs runtime del deployment:
+  - `No exports found in module "/var/task/apps/api/src/main.js"` indica handler serverless faltante o exportado de forma incompatible
+  - `Cannot find module 'express'` indica dependencia runtime faltante en `apps/api/package.json`
