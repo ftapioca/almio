@@ -1,12 +1,17 @@
 import '../prisma/load-env';
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express, { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { getApiRuntimeConfig } from './common/config/runtime-env';
 
-async function bootstrap() {
+const expressServer = express();
+let appBootstrapPromise: Promise<void> | null = null;
+
+async function configureApp() {
   const runtimeConfig = getApiRuntimeConfig();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressServer));
 
   app.setGlobalPrefix('v1');
   app.enableShutdownHooks();
@@ -25,7 +30,30 @@ async function bootstrap() {
     }),
   );
 
+  return { app, runtimeConfig };
+}
+
+async function ensureAppInitialized() {
+  if (!appBootstrapPromise) {
+    appBootstrapPromise = (async () => {
+      const { app } = await configureApp();
+      await app.init();
+    })();
+  }
+
+  await appBootstrapPromise;
+}
+
+async function bootstrap() {
+  const { app, runtimeConfig } = await configureApp();
   await app.listen(runtimeConfig.port);
 }
 
-void bootstrap();
+export default async function handler(request: Request, response: Response) {
+  await ensureAppInitialized();
+  expressServer(request, response);
+}
+
+if (process.env.VERCEL !== '1') {
+  void bootstrap();
+}
