@@ -49,7 +49,13 @@ export function AttendanceConsole({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const directory = useBackofficeDirectory({ apiBaseUrl, tenantId });
+  const {
+    branches,
+    employees,
+    error: directoryError,
+    isLoading: directoryIsLoading,
+    loadEmployees,
+  } = useBackofficeDirectory({ apiBaseUrl, tenantId });
   const api = useBackofficeApi({
     accessToken: backoffice.accessToken,
     apiBaseUrl,
@@ -74,36 +80,36 @@ export function AttendanceConsole({
   }, [backoffice.activeBranchId, filterBranchId, selectedBranchId]);
 
   useEffect(() => {
-    if (directory.error) {
-      setError(directory.error);
+    if (directoryError) {
+      setError(directoryError);
     }
-  }, [directory.error]);
+  }, [directoryError]);
 
   const branchNameById = useMemo(
-    () => createBranchNameMap(directory.branches),
-    [directory.branches],
+    () => createBranchNameMap(branches),
+    [branches],
   );
   const employeeNameById = useMemo(
-    () => createEmployeeNameMap(directory.employees),
-    [directory.employees],
+    () => createEmployeeNameMap(employees),
+    [employees],
   );
 
   const employeesForSelectedBranchFiltered = useMemo(
     () =>
       filterEmployeesBySearch(
-        filterEmployeesByBranch(directory.employees, selectedBranchId),
+        filterEmployeesByBranch(employees, selectedBranchId),
         employeeSearchTerm,
       ),
-    [directory.employees, employeeSearchTerm, selectedBranchId],
+    [employeeSearchTerm, employees, selectedBranchId],
   );
 
   const employeesForFilterBranchFiltered = useMemo(
     () =>
       filterEmployeesBySearch(
-        filterEmployeesByBranch(directory.employees, filterBranchId),
+        filterEmployeesByBranch(employees, filterBranchId),
         filterEmployeeSearchTerm,
       ),
-    [directory.employees, filterBranchId, filterEmployeeSearchTerm],
+    [employees, filterBranchId, filterEmployeeSearchTerm],
   );
 
   const attendanceJourneySummary = useMemo(() => {
@@ -214,7 +220,7 @@ export function AttendanceConsole({
     setError(null);
 
     try {
-      await Promise.all([directory.loadEmployees(), loadAttendance()]);
+      await Promise.all([loadEmployees(), loadAttendance()]);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -224,7 +230,7 @@ export function AttendanceConsole({
     } finally {
       setIsLoading(false);
     }
-  }, [api.hasSession, directory, loadAttendance, tenantId]);
+  }, [api.hasSession, loadAttendance, loadEmployees, tenantId]);
 
   useEffect(() => {
     void initializeConsole();
@@ -379,7 +385,7 @@ export function AttendanceConsole({
     <div className="grid gap-6">
       <AttendanceFilters
         apiBaseUrl={apiBaseUrl}
-        branches={directory.branches}
+        branches={branches}
         employees={employeesForFilterBranchFiltered}
         filterBranchId={filterBranchId}
         filterEmployeeId={filterEmployeeId}
@@ -388,7 +394,7 @@ export function AttendanceConsole({
         filterFrom={filterFrom}
         filterTo={filterTo}
         hasSession={api.hasSession}
-        isLoading={isLoading || directory.isLoading}
+        isLoading={isLoading || directoryIsLoading}
         onApiBaseUrlChange={setApiBaseUrl}
         onFilterBranchChange={(value) => {
           setFilterBranchId(value);
@@ -408,7 +414,7 @@ export function AttendanceConsole({
       />
 
       <AttendanceEditor
-        branches={directory.branches}
+        branches={branches}
         employees={employeesForSelectedBranchFiltered}
         employeeSearchTerm={employeeSearchTerm}
         eventAtInput={eventAtInput}
