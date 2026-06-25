@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   AlertDescription,
@@ -15,7 +15,8 @@ import {
   Label,
   Textarea,
 } from '@almio/design-system';
-import { createClient } from '../../../lib/supabase/client';
+import { useBackofficeContext } from '../_components/backoffice-client-context';
+import { useBackofficeApi } from '../_hooks/use-backoffice-api';
 
 type BranchScopeBranch = {
   id: string;
@@ -33,10 +34,6 @@ type BranchScopeResponse = {
   branches: BranchScopeBranch[];
 };
 
-function normalizeApiBaseUrl(value: string) {
-  return value.trim().replace(/\/+$/, '');
-}
-
 function normalizeBranchIds(value: string) {
   return value
     .split(/[\n,\s]+/)
@@ -51,61 +48,36 @@ export function BranchScopesConsole({
   initialApiBaseUrl: string;
   initialTenantId: string;
 }) {
+  const backoffice = useBackofficeContext();
   const [apiBaseUrl, setApiBaseUrl] = useState(initialApiBaseUrl);
   const [tenantId, setTenantId] = useState(initialTenantId);
-  const [accessToken, setAccessToken] = useState('');
   const [membershipId, setMembershipId] = useState('');
   const [branchIdsInput, setBranchIdsInput] = useState('');
   const [result, setResult] = useState<BranchScopeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const api = useBackofficeApi({
+    accessToken: backoffice.accessToken,
+    apiBaseUrl,
+    tenantId,
+  });
 
   const parsedBranchIds = useMemo(
     () => normalizeBranchIds(branchIdsInput),
     [branchIdsInput],
   );
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getSession().then(({ data }) => {
-      setAccessToken(data.session?.access_token ?? '');
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccessToken(session?.access_token ?? '');
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function readScopes(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function readScopes() {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(
-        `${normalizeApiBaseUrl(apiBaseUrl)}/admin/branch-membership-scopes?membershipId=${encodeURIComponent(membershipId.trim())}`,
+      const nextResult = await api.request<BranchScopeResponse>(
+        `/admin/branch-membership-scopes?membershipId=${encodeURIComponent(membershipId.trim())}`,
         {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken.trim()}`,
-            'X-Tenant-ID': tenantId.trim(),
-          },
+          fallbackMessage: 'No fue posible consultar los scopes',
         },
       );
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error?.message ?? 'No fue posible consultar los scopes');
-      }
-
-      const nextResult = payload.data as BranchScopeResponse;
       setResult(nextResult);
       setBranchIdsInput(nextResult.branchIds.join('\n'));
     } catch (requestError) {
@@ -124,27 +96,16 @@ export function BranchScopesConsole({
     setError(null);
 
     try {
-      const response = await fetch(
-        `${normalizeApiBaseUrl(apiBaseUrl)}/admin/branch-membership-scopes/${encodeURIComponent(membershipId.trim())}`,
+      const nextResult = await api.request<BranchScopeResponse>(
+        `/admin/branch-membership-scopes/${encodeURIComponent(membershipId.trim())}`,
         {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${accessToken.trim()}`,
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId.trim(),
-          },
-          body: JSON.stringify({
+          body: {
             branchIds: parsedBranchIds,
-          }),
+          },
+          fallbackMessage: 'No fue posible reemplazar los scopes',
+          method: 'PUT',
         },
       );
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error?.message ?? 'No fue posible reemplazar los scopes');
-      }
-
-      const nextResult = payload.data as BranchScopeResponse;
       setResult(nextResult);
       setBranchIdsInput(nextResult.branchIds.join('\n'));
     } catch (requestError) {
@@ -170,7 +131,13 @@ export function BranchScopesConsole({
         </CardHeader>
 
         <CardContent>
-          <form className="grid gap-6" onSubmit={readScopes}>
+          <form
+            className="grid gap-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void readScopes();
+            }}
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-2">
                 <Label htmlFor="branch-scopes-api-base-url">API Base URL</Label>
@@ -198,9 +165,10 @@ export function BranchScopesConsole({
               <Textarea
                 id="branch-scopes-access-token"
                 className="min-h-28"
-                value={accessToken}
-                onChange={(event) => setAccessToken(event.target.value)}
+                value={backoffice.accessToken}
+                onChange={() => undefined}
                 placeholder="Bearer token emitido por Supabase Auth"
+                readOnly
               />
             </label>
 
@@ -223,7 +191,7 @@ export function BranchScopesConsole({
                   isLoading ||
                   !membershipId.trim() ||
                   !tenantId.trim() ||
-                  !accessToken.trim()
+                  !api.hasSession
                 }
               >
                 {isLoading ? 'Consultando...' : 'Consultar scopes'}
@@ -246,13 +214,13 @@ export function BranchScopesConsole({
                   loading={isLoading}
                   onClick={replaceScopes}
                   disabled={
-                    isLoading ||
-                    !membershipId.trim() ||
-                    !tenantId.trim() ||
-                    !accessToken.trim()
-                  }
-                >
-                  {isLoading ? 'Aplicando...' : 'Reemplazar scopes'}
+                  isLoading ||
+                  !membershipId.trim() ||
+                  !tenantId.trim() ||
+                  !api.hasSession
+                }
+              >
+                {isLoading ? 'Aplicando...' : 'Reemplazar scopes'}
                 </Button>
               </CardHeader>
 
